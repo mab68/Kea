@@ -16,9 +16,9 @@ It provides:
 ## Todo list
 
 This is my todo list for this refactoring session:
-- [ ] *simulator/fBm.py*: change the create_fbm() function parameters
-- [ ] *simulator/exposure.py*: create exposure.py and move exposure and mask generation to here
-- [ ] *statistic/moments.py*: handle projections, change how the dx/dk is done
+- [x] *simulator/fBm.py*: change the create_fbm() function parameters
+- [x] *simulator/exposure.py*: create exposure.py and move exposure and mask generation to here
+- [x] *statistic/moments.py*: handle projections, change how the dx/dk is done
 - [ ] *statistic/spectra/arevalo_spectra.py*: use scale_filter.py
 - [ ] *statistic/spectra/strfn_spectra.py*: add the derivative form of the equivalent structure function power spectrum calculation
 - [x] *utils/data_reader.py*: modernize
@@ -27,11 +27,12 @@ This is my todo list for this refactoring session:
 - [x] *utils/plotting.py*: modernize
 - [x] *utils/evaluate.py*: add in MSE, MAPE, and bias methods
 
-Short term goals of this repository:
+Short term goals:
 - [ ] *statistics/spectra/arevalo_spectra.py*: add Poisson error
 - [ ] *utils/funcs.py*: exponential powerlaw (decay and growth region)
 
 Long term goals of this repository:
+- [ ] *simulator/exposure.py*: add synthetic exposure map generation
 - [ ] *fitting/profile.py*: Add emcee fitting for the cluster profiles 
 - [ ] *fitting*: Correlation scale fitting
 - [ ] *noise*: Fix the problems with needing to include the exposure map for generating realizations of the noise. Generalized apply_noise() method
@@ -68,7 +69,7 @@ tests/
 
 ## To install
 
-To install, simply add the following to your `PYTHONPATH` environment variable in your `./bashrc` file
+To install, simply add the following to your `PYTHONPATH` environment variable in your `~/.bashrc` file
 ```bash
 export PYTHONPATH=path/to/Kea:$PYTHONPATH
 ```
