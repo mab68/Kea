@@ -39,7 +39,7 @@ def omni_spectrum_2(ar, nar=None, lenn=None):
     if nar is None:
         nar = statfunc_base.get_lagvec_magnitude_array(ar.shape)
     nar, sf1d, _ = statistics_base.bin_data(
-        nar, ar, mean_func=np.nanmean, min_bin=0., cut_excess=True, ignore_nan=True, norm_bin_size=False)
+        nar, ar, mean_func=np.nanmean, min_bin=1., cut_excess=True, ignore_nan=True, norm_bin_size=False)
     N = len(nar)
     dx = lenn/N
     dk = 2.*np.pi/(N*dx)

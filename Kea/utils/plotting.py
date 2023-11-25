@@ -34,13 +34,18 @@ COLOR_CYCLE_3 = [
     "#F0E442"
 ]
 COLOR_CYCLE_4 = sns.color_palette('tab10')
+COLOR_CYCLE_5 = [
+    '#0072bd', '#d95319', '#edb120',
+    '#7e2f8e', '#77ac30', '#4dbeee',
+    '#a2142f'
+]
 
 LINESTYLE_CYCLE_1 = [
     '-', 'dashed', 'dashdot',
     (0, (3, 1, 1, 1, 1, 1)), (0, (3, 5, 1, 5)), (0, (3, 10, 1, 10, 1, 10)), ':'
 ]
 LINESTYLE_CYCLE_2 = [
-    'dashed', ':'
+    (0, (5, 5)), ':'
 ]
 
 IMG_CBARS = {
@@ -64,17 +69,23 @@ def modify_rc():
     mpl.rcParams['figure.dpi'] = 250
     mpl.rc('text', usetex=True)
     mpl.rcParams['text.latex.preamble']=[r"\usepackage{bm}"]
-    mpl.rc('font', family='serif', serif='cm10', size=10)
+    mpl.rc('font', family='serif', serif='cm10', size=8)
 
-def set_logticks(ax):
+def set_logticks(ax, x=False, y=True, numticks=10):
     """set_logticks(ax)
     
     Sets the x/y-axis to have nice ticks for a log format
     """
-    locmaj = mpl.ticker.LogLocator(base=10.0, numticks=10)
-    ax.set_major_locator(locmaj)
-    locmin = mpl.ticker.LogLocator(base=10.0, subs=(0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9), numticks=10)
-    ax.set_minor_locator(locmin)
+    locmaj = mpl.ticker.LogLocator(base=10.0, numticks=numticks)
+    if x:
+        ax.xaxis.set_major_locator(locmaj)
+    if y:
+        ax.yaxis.set_major_locator(locmaj)
+    locmin = mpl.ticker.LogLocator(base=10.0, subs=[i/(10.) for i in range(1,numticks)], numticks=numticks)
+    if x:
+        ax.xaxis.set_minor_locator(locmin)
+    if y:
+        ax.yaxis.set_minor_locator(locmin)
 
 def set_format(ax, format='%.1f'):
     """set_format(ax, format)

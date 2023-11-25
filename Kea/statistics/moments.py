@@ -69,7 +69,7 @@ def make_moment(ar, moment, shape=None, lenn=None, axis=None, take_abs=True):
         shape = np.shape(ar)
     if lenn is None:
         lenn = [2. * np.pi for _ in range(len(shape))]
-    
+
     if hasattr(shape, '__iter__'):
         dx = [lenn[i]/N for i, N in enumerate(shape)]
         if axis is not None:
