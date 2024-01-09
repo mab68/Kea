@@ -13,37 +13,6 @@ It provides:
 - Helpful plotting functions
 - and much more!
 
-## Todo list
-
-This is my todo list for this refactoring session:
-- [x] *simulator/fBm.py*: change the create_fbm() function parameters
-- [x] *simulator/exposure.py*: create exposure.py and move exposure and mask generation to here
-- [x] *statistic/moments.py*: handle projections, change how the dx/dk is done
-- [ ] *statistic/spectra/arevalo_spectra.py*: use scale_filter.py
-- [ ] *statistic/spectra/strfn_spectra.py*: add the derivative form of the equivalent structure function power spectrum calculation
-- [x] *utils/data_reader.py*: modernize
-- [x] *utils/data_writer.py*: modernize
-- [x] *utils/funcs.py*: modernize
-- [x] *utils/plotting.py*: modernize
-- [x] *utils/evaluate.py*: add in MSE, MAPE, and bias methods
-
-Short term goals:
-- [ ] *statistics/spectra/arevalo_spectra.py*: add Poisson error
-- [ ] *utils/funcs.py*: exponential powerlaw (decay and growth region)
-
-Long term goals of this repository:
-- [ ] *simulator/exposure.py*: add synthetic exposure map generation
-- [ ] *fitting/profile.py*: Add emcee fitting for the cluster profiles 
-- [ ] *fitting*: Correlation scale fitting
-- [ ] *noise*: Fix the problems with needing to include the exposure map for generating realizations of the noise. Generalized apply_noise() method
-- [ ] *noise*: Fix the problems with the noise floor being off
-- [ ] *simulator/fBm.py*: radially dependent power spectrum
-- [ ] *simulator/resolution.py*: modernize
-- [ ] *statistic/spectra/arevalo_spectra.py*: arevalo_spectra.py, multithreading
-
-Goals I am not sure of yet:
-- [ ] *statistic/spectra/arevalo_spectra.py*: N-dimensional version
-
 ## File structure
 ```
 Kea/

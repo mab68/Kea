@@ -39,6 +39,16 @@ COLOR_CYCLE_5 = [
     '#7e2f8e', '#77ac30', '#4dbeee',
     '#a2142f'
 ]
+COLOR_CYCLE_6 = [
+    '#0072bd',
+    '#d95319',
+    '#33a02c',
+    '#fb9a99',
+    '#e31a1c',
+    '#fdbf6f',
+    '#ff7f00',
+    '#33a02c'
+]
 
 LINESTYLE_CYCLE_1 = [
     '-', 'dashed', 'dashdot',
