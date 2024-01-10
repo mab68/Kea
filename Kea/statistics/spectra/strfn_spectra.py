@@ -46,7 +46,7 @@ def omni_spectrum_2(ar, nar=None, lenn=None):
     kk = 2.*np.pi / (dx * nar)
 
     dS = np.gradient(sf1d)
-    fek = (1./4.) * dS/dx
+    fek = - (1./(8.*np.pi)) * (2.*np.pi)**ar.ndim * nar**2 * (dS/dx)
     return kk, fek
 
 def omni_spectrum(ar, nar=None, lenn=None):
