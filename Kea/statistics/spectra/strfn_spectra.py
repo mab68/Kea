@@ -33,21 +33,37 @@ def interpolate(k_sf, fek_sf, k_interp):
     fek_new = f_int(np.log10(k_interp))
     return 10**fek_new
 
-def omni_spectrum_2(ar, nar=None, lenn=None):
+def omni_spectrum_2(ar, n=None, lenn=None):
+    # if lenn is None:
+    #     lenn = 2.*np.pi
+    # if nar is None:
+    #     nar = statfunc_base.get_lagvec_magnitude_array(ar.shape)
+    # nar, sf1d, _ = statistics_base.bin_data(
+    #     nar, ar, mean_func=np.nanmean, min_bin=1., cut_excess=True, ignore_nan=True, norm_bin_size=False)
+    # N = len(nar)
+    # dx = lenn/N
+    # dk = 2.*np.pi/(N*dx)
+    # kk = 2.*np.pi / (dx * nar)
+
+    # dS = np.gradient(sf1d)
+    # fek = - (1./(8.*np.pi)) * (2.*np.pi)**ar.ndim * nar**2 * (dS/dx)
+    # return kk, fek
     if lenn is None:
         lenn = 2.*np.pi
-    if nar is None:
-        nar = statfunc_base.get_lagvec_magnitude_array(ar.shape)
-    nar, sf1d, _ = statistics_base.bin_data(
-        nar, ar, mean_func=np.nanmean, min_bin=1., cut_excess=True, ignore_nan=True, norm_bin_size=False)
-    N = len(nar)
+    if n is None:
+        n = statfunc_base.get_lagvec_magnitude_array(ar.shape)
+    n, sf1d, _ = statistics_base.bin_data(
+        n, ar, mean_func=np.nanmean, min_bin=1., cut_excess=True, ignore_nan=True, norm_bin_size=False)
+    N = len(n)
     dx = lenn/N
-    dk = 2.*np.pi/(N*dx)
-    kk = 2.*np.pi / (dx * nar)
-
+    dk = 2.*np.pi / lenn
+    kk = 2.*np.pi / (dx*n)
     dS = np.gradient(sf1d)
-    fek = - (1./(8.*np.pi)) * (2.*np.pi)**ar.ndim * nar**2 * (dS/dx)
-    return kk, fek
+    ell = dx * n
+    dell = np.gradient(ell)
+    fek = (dk / (2. * np.pi))**ar.ndim * (1./(8.*np.pi)) * (2.*np.pi)**ar.ndim * (ell)**2 * (dS/dell)
+    #fek = (dk / (2. * np.pi))**ar.ndim * (ell)**2 * (dS/dell)
+    return kk[::-1], fek[::-1]
 
 def omni_spectrum(ar, nar=None, lenn=None):
     """omni_spectrum(ar)
