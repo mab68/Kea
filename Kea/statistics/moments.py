@@ -79,7 +79,8 @@ def make_moment(ar, moment, shape=None, lenn=None, axis=None, take_abs=True):
         dx = np.prod(lenn) / shape
 
     if take_abs:
-        moment = dx * np.nansum(np.abs(ar)**moment, axis=axis)
-    else:
-        moment = dx * np.nansum(ar**moment, axis=axis)
+        ar = np.abs(ar)
+
+    moment = np.nansum(ar**moment * dx, axis=axis)
+    moment = moment / np.nansum(np.ones_like(ar) * dx, axis=axis)
     return moment

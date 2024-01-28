@@ -190,7 +190,7 @@ def spectrum_integrate(kvec, mspec, spec_type='omni', lenn=None, **kwargs):
         spec (np.ndarray): Integrated spectrum
         std (np.ndarray): Standard deviation for the integration of the spectrum
     """
-    kmesh = wavenumber_mesh(kvec)
+    kmesh = wavenumber_mesh(kvec, phys_dims=lenn)
     assert np.shape(kmesh) == np.shape(mspec), 'kvec does not span mspec'
     cut_excess = kwargs.get('cut_excess', True)
     nan_small = kwargs.get('nan_small', False)
@@ -198,6 +198,7 @@ def spectrum_integrate(kvec, mspec, spec_type='omni', lenn=None, **kwargs):
         lenn = [2.*np.pi for _ in range(mspec.ndim)]
     # Minimum k is the first non-zero k value = 1*dk
     min_k = np.min([2.*np.pi/lenn[i] for i in range(mspec.ndim)])
+    min_k = 1.
     min_bin = kwargs.get('min_bin', min_k)
     max_bin = kwargs.get('max_bin', None)
     bin_center = kwargs.get('bin_center', True)
@@ -240,7 +241,7 @@ def nanstderr(x):
     ## NOTE: half is because the power spectrum is symmetric
     return np.nanstd(x)/np.sqrt(0.5*x.size)
 
-def wavenumber_mesh(kvec):
+def wavenumber_mesh(kvec, phys_dims=None):
     """wavenumber_mesh(kvec)
 
     Computes the ndimensional wavenumber magnitude mesh
@@ -250,6 +251,10 @@ def wavenumber_mesh(kvec):
     Returns:
         km (np.ndarray): Wavenumber magnitude mesh
     """
-    kmesh = np.meshgrid(*kvec, indexing='xy')
+    if phys_dims is None:
+        dk = np.float64(1.)
+    else:
+        dk = np.prod([2.*np.pi/L for L in phys_dims])
+    kmesh = np.meshgrid(*kvec, indexing='xy') / dk
     km = np.linalg.norm(kmesh, axis=0)
     return km

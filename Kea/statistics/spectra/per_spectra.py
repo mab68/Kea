@@ -49,23 +49,22 @@ def modal_spectrum(ar1, ar2=None, wfunc=None, p=0.1, lenn=None, norm=True):
         ar1 = statistics_base.apply_ndim_window(ar1, wfunc, p, norm=norm)
         if ar2 is not None:
             ar2 = statistics_base.apply_ndim_window(ar2, wfunc, p, norm=norm)
+
     kvec = []
-    # dx = L/N
     dx = []
-    # dk = 2pi/Ndx
     dk = []
     for i, N in enumerate(ar1.shape):
         dx.append(lenn[i]/N)
-        # Note: this is really dk = 1/Ndx
-        dk.append(1./(N*dx[i]))
+        dk.append(2.*np.pi/(N*dx[i]))
         kvec.append(fft.fftshift(fft.fftfreq(N))*2.*np.pi/dx[i])
+
     far1 = np.prod(dx)*fft.fftshift(fft.fftn(ar1))
     if ar2 is not None:
         far2 = np.prod(dx)*fft.fftshift(fft.fftn(ar2))
-    # dividing by 2pi is already done in dk
+
     if ar2 is not None:
-        fek = np.prod(dk)*far1*np.conjugate(far2)
+        fek = far1*np.conjugate(far2)
         fek = fek.real
     else:
-        fek = np.prod(dk)*np.abs(far1)**2
+        fek = np.abs(far1)**2
     return tuple(kvec), fek
