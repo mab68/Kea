@@ -74,6 +74,7 @@ def smooth_pow(xx, alphas, breaks, A=1., xn=None, **kwargs):
         else:
             terms.append((0.5 * (1. + (xx/bb[i-1])))**(a[i-1] - a[i]))
     pl = A * np.prod(terms, axis=0)
+    pl[np.where(xx == 0.)] = A
     noise = 0.
     if xn is not None:
         pos = tuple([v[0] for v in np.where(xx - xn >= 0.)])
