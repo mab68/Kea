@@ -50,6 +50,7 @@ def bkn_pow(xx, alphas, breaks, A=1., xn=None, **kwargs):
     if xn is not None:
         pos = tuple([v[0] for v in np.where(xx - xn >= 0.)])
         noise = np.ones_like(pl) * pl[pos]
+    raise ValueError('This doesn\'t work.')
     return pl + noise
 
 def smooth_pow(xx, alphas, breaks, A=1., xn=None, **kwargs):
