@@ -14,7 +14,14 @@ References:
 [1] Koch, Eric W., Erik W. Rosolowsky, Ryan D. Boyden, Blakesley Burkhart, Adam Ginsburg, Jason L. Loeppky, and Stella SR Offner.
     "TurbuStat: Turbulence statistics in python." The Astronomical Journal 158, no. 1 (2019): 1.
 [2] https://turbustat.readthedocs.io/en/latest/
+[3] Barnsley, M. F., Devaney, R. L., Mandelbrot, B. B., Peitgen, H. O., Saupe, D., Voss, R. F., ... & McGuire, M. (1988).
+    The science of fractal images (Vol. 1, p. 312). New York: Springer.
+[4] Bates, M. L., Whitworth, A. P., & Lomax, O. D. (2020).
+    Characterizing lognormal fractional-Brownian-motion density fields with a convolutional neural network.
+    Monthly Notices of the Royal Astronomical Society, 493(1), 161-170.
 """
+
+import itertools
 
 import numpy as np
 
@@ -22,8 +29,7 @@ import scipy.fft as fft
 
 from ..utils import funcs
 
-
-def create_fbm(grid_dims, phys_dims, alphas, breaks, gfunc='smooth_pow', func_kwargs={}):
+def create_fbm(grid_dims, phys_dims, alphas, breaks, gfunc='pure_pow', func_kwargs={}):
     """create_fbm(grid_dims, phys_dims, alphas, breaks, gfunc, func_kwargs)
 
     Generates an arbitrary fBm field
@@ -57,25 +63,67 @@ def create_fbm(grid_dims, phys_dims, alphas, breaks, gfunc='smooth_pow', func_kw
         gfunc = getattr(funcs, gfunc)
 
     # Generate fBM in Fourier space
-    output = gfunc(kk, alphas, breaks, **func_kwargs).astype('complex')
-    C = 2./dkD
-    output = np.sqrt(output * C)
+    output = gfunc(kk, alphas, **func_kwargs).astype('complex')
+    #C = 2. / dkD
+    C = np.nanmean(output) / np.prod(grid_dims)
+    output = np.sqrt(output / C)
+
     # Random phases
     phases = np.random.uniform(0, 2.*np.pi, size=grid_dims)
+    #phases = phases - fft.fftshift(phases)
     phases = np.cos(phases) + 1j * np.sin(phases)
+    #phases /= np.sqrt(np.sum(phases**2) / float(phases.size))
     output = output * phases
     #output = output
-    output[np.isnan(output)] = 0. + 1j * 0.0
 
-    # DC components must have no imaginary components
-    #index = [0 for _ in dims]
-    #output[tuple(index)] = output[tuple(index)].real + 1j * 0.0
-    #index[-1] = -1
-    #output[tuple(index)] = output[tuple(index)].real + 1j * 0.0
+    ## Ensure the function is Hermitian
+    # => The FT is real-valued
+    # DC value
+    zero_idx = tuple([0 for _ in grid_dims])
+    output[zero_idx] = 0. + 1j * 0.
 
-    # Convert to configuration-space
-    fbm_field = dkD * fft.ifftn(output, norm='forward').real
-    return fbm_field
+    # The nyquist components without a partner must be their own real
+    args = [[n//2, 0] for n in grid_dims]
+    idx = list(itertools.product(*args))
+    for i in range(len(idx)):
+        output[tuple(idx[i])] = output[tuple(idx[i])].real + 1j * 0.
+
+    # l_args = [[slice(1, n//2 + 1), 0] for n in grid_dims]
+    # l_idx = list(itertools.product(*l_args))
+    # r_args = [[slice(n, n//2 - 1, -1), 0] for n in grid_dims]
+    # r_idx = list(itertools.product(*r_args))
+    # for i in range(len(l_idx)):
+    #     output[tuple(l_idx[i])] = np.conjugate(output[tuple(r_idx[i])])
+
+    # NOTE: There is redundant computation here
+    l_args = [[slice(1, n//2 + 1), slice(n, n//2 - 1, -1), 0, n//2] for n in grid_dims]
+    l_idx = list(itertools.product(*l_args))
+    r_args = [[slice(n, n//2 - 1, -1), slice(1, n//2 + 1), 0, n//2] for n in grid_dims]
+    r_idx = list(itertools.product(*r_args))
+    for i in range(len(l_idx)):
+        output[tuple(l_idx[i])] = np.conjugate(output[tuple(r_idx[i])])
+
+    # if len(grid_dims) == 2:
+    #     for i in range(0, N//2+1):
+    #         for j in range(0, N//2+1):
+    #             i0 = 0 if i == 0 else N-i
+    #             j0 = 0 if j == 0 else N-j
+    #             output[i,j] = np.conjugate(output[i0,j0])
+    #             output[i0,j] = np.conjugate(output[i,j0])
+
+    # if len(grid_dims) == 3:
+    #     for i in range(0, N//2+1):
+    #         for j in range(0, N//2+1):
+    #             for k in range(0, N//2+1):
+    #                 i0 = 0 if i == 0 else N-i
+    #                 j0 = 0 if j == 0 else N-j
+    #                 k0 = 0 if k == 0 else N-k
+    #                 output[i,j,k] = np.conjugate(output[i0,j0,k0])
+    #                 output[i0,j,k] = np.conjugate(output[i,j0,k0])
+    #                 output[i,j0,k] = np.conjugate(output[i0,j,k0])
+    #                 output[i,j,k0] = np.conjugate(output[i0,j0,k])
+
+    return fft.ifftn(output, norm='backward').real#output
 
 def dephase_data(ar):
     """dephase_data(ar)

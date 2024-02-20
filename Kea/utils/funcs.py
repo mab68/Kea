@@ -20,6 +20,36 @@ import scipy.fft as fft
 from scipy.ndimage import gaussian_filter
 
 
+def pure_pow(xx, alphas, **kwargs):
+    """pure_pow(xx, alphas)
+    
+    Generates a pure power law function
+
+        f(x) = x^alpha
+    where
+        f(0) = 0
+    and
+        f(x>xmax) = 0
+
+    Args:
+        xx (np.ndarray): Grid
+        alphas (tuple): Power law values
+    Returns:
+        np.ndarray: Pure powerlaw function defined on `xx`
+    """
+    ## Function
+    pl = xx**(alphas[0])
+    # Set where it is not defined to 0
+    pl[~np.isfinite(pl)] = 0.
+    # Outside the axis to be 0
+    minn = np.where(xx == np.nanmin(xx))
+    idx = [m for m in minn]
+    idx[0] = slice(0,np.max(xx.shape))
+    idx = tuple(idx)
+    maxx = np.max(xx[idx])
+    pl[xx > maxx] = 0.
+    return pl
+
 def bkn_pow(xx, alphas, breaks, A=1., xn=None, **kwargs):
     """bkn_pow(xx, alphas, breaks, A, **kwargs)
     
