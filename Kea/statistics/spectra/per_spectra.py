@@ -69,9 +69,10 @@ def modal_spectrum(ar1, ar2=None, wfunc=None, p=0.1, lenn=None, norm=True):
         fek = np.abs(far1)**2
 
     # Normalize the power spectrum
-    ## NOTE: This just means our spectrum is now calculated using 
-    ##      the true DFT formula
+    ## NOTE: With BOTH the normalizations, we obtain the expected DFT formula.
     fek = fek / np.sum(np.ones_like(ar1) * np.prod(dx))
-    fek = fek * np.prod(dk) / (2.*np.pi)**ar1.ndim
+    ## NOTE: This normalization is not going to be applied.
+    ##      Apply this during the integration.
+    #fek = fek * np.prod(dk) / (2.*np.pi)**ar1.ndim
 
     return tuple(kvec), fek

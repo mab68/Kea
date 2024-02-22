@@ -71,9 +71,8 @@ def modal_spectrum(ar, wfunc=None, p=0.1, lenn=None):
     for i, N in enumerate(shape):
         dx.append(1.*lenn[i]/N)
         # note: note including 2pi factor because of the normalization
-        dk.append(1./(N*dx[i]))
+        dk.append(2.*np.pi/(N*dx[i]))
         kvec.append(fft.fftshift(fft.fftfreq(N)) * 2. * np.pi / dx[i])
         #ar_cpy = np.roll(ar_cpy, N//2, axis=i)
-    # 2pi normalization is done in dk already
-    fek = np.prod(dk) * np.prod(dx) * fft.fftshift(fft.fftn(fft.ifftshift(ar_cpy)))
+    fek = np.prod(dx) * fft.fftshift(fft.fftn(fft.ifftshift(ar_cpy)))# * np.prod(dk) / (2.*np.pi)**ar1.ndim
     return kvec, fek
