@@ -18,102 +18,32 @@ import numpy as np
 from .. import statistics_base
 
 
-def calculate_integrated_spectrum(arz, method='periodogram', spec_type='omni', lenn=None, convert=False, lags=None, int_kwargs={}):
-    """calculate_spectrum(arz, method, spec_type)
+def calculate_spectrum(ar1, ar2=None, method='periodogram', spec_type='omni', grid_dims=None, phys_dims=None, **int_kwargs):
+    """calculate_spectrum(ar1, ar2, method, spec_type, grid_dims, phys_dims, **int_kwargs)
+    
+    Calculates the integrated spectrum (cross-spectrum if `ar2` is defined) using the requested methods
 
-    Calculates the integrated spectrum of all the arrays in `arz` using the requested methods
-
-    Args:
-        arz (tuple): Tuple of arrays to compute the integrated spectra of each
-        method (str): Default periodogram. What spectrum method to use
-            periodogram: Use the periodogram method
-            correlogram: Use the correlogram method
-            strfn: Use the equivalent structure function method
-            arevalo: Use the Arevalo method
-            flatsky: Use the `pymaster` flatsky method
-        spec_type (str): Default omni. What method of integration to use
-            omni: Calculate the omni-spectrum
-            modal: Calculate the 1-D modal-spectrum
-            amplitude: Calculate the amplitude
-        convert (bool): If true, for strfn and correlogram convert the array to the respective forms
-        lenn (tuple): Computational domain
-        int_kwargs (dict): Kwargs to pass onto the integration method
     Returns:
-        kx (np.ndarray): 1 dimensional Wavenumber array
-        fek (np.ndarray): Individual integrated spectra for each `ar` in `arz`
-        fektrace (np.ndarray): Summation of the individual integrated spectra
+        ki (np.ndarray): Binned wavenumbers
+        feki (np.ndarray): Binned power spectrum
+        wi (np.ndarray): Bin widths
     """
-    if method == 'periodogram' or method == 'correlogram':
-        if method == 'periodogram':
-            from . import per_spectra as spectra
-        if method == 'correlogram':
-            from . import corr_spectra as spectra
-            from ..statfunc import corr
+    D = ar1.ndim
+    if method == 'periodogram':
+        from . import per_spectra as periodogram
         st = spec_type
         if spec_type == 'amplitude':
             st = 'omni'
-        specs = []
-        for ar in arz:
-            if method == 'correlogram' and convert:
-                ar = corr.autocovariance_fft(ar.copy(), shape=[N//2 for N in ar.shape])
-            kxn, fxn = spectra.modal_spectrum(ar, lenn=lenn)
-            kx, fx, _ = spectrum_integrate(kxn, fxn, spec_type=st, lenn=lenn, **int_kwargs)
-            if spec_type == 'amplitude':
-                fx = translate_spectrum(kx, fx, st, spec_type)
-            specs.append(fx)
-        return kx, *specs, np.sum(specs, axis=0)
-    elif method == 'strfn':
-        #assert spec_type == 'omni', 'Can only calculate the omni-spectrum for %s method' % method
-        from . import strfn_spectra as spectra
-        from ..statfunc import corr, strfn
-        specs = []
-        for ar in arz:
-            if convert:
-                acf = corr.autocovariance_fft(ar.copy(), shape=[N//2 for N in ar.shape])
-                ar = strfn.autocorrelation_to_strfn(acf)
-            kx, fx = spectra.omni_spectrum(ar, lenn=lenn)
-            if spec_type != 'omni':
-                fx = translate_spectrum(kx, fx, 'omni', spec_type, orig_dim=ar.ndim)
-            specs.append(fx)
-        return kx, *specs, np.sum(specs, axis=0)
-    elif method == 'strfn2':
-        #assert spec_type == 'omni', 'Can only calculate the omni-spectrum for %s method' % method
-        from . import strfn_spectra as spectra
-        from ..statfunc import corr, strfn
-        specs = []
-        for ar in arz:
-            if convert:
-                acf = corr.autocovariance_fft(ar.copy(), shape=[N//2 for N in ar.shape])
-                ar = strfn.autocorrelation_to_strfn(acf)
-            kx, fx = spectra.omni_spectrum_2(ar, lenn=lenn)
-            if spec_type != 'omni':
-                fx = translate_spectrum(kx, fx, 'omni', spec_type, orig_dim=ar.ndim)
-            specs.append(fx)
-        return kx, *specs, np.sum(specs, axis=0)
-    elif method == 'arevalo':
-        from . import arevalo_spectra as spectra
-        specs = []
-        for ar in arz:
-            kx, fx = spectra.modal_spectrum(ar, lenn=lenn, lags=lags)
-            if spec_type != 'modal':
-                fx = translate_spectrum(kx, fx, 'modal', spec_type)
-            specs.append(fx)
-        return kx, *specs, np.sum(specs, axis=0)
-    elif method == 'flatsky':
-        #assert spec_type == 'modal', 'Can only calculate the modal-spectrum for %s method' % method
-        if method == 'flatsky':
-            from . import flatsky_spectra as spectra
-        specs = []
-        for ar in arz:
-            kx, fx, _ = spectra.modal_spectrum(ar, lenn=lenn)
-            if spec_type != 'modal':
-                fx = translate_spectrum(kx, fx, 'modal', spec_type)
-            specs.append(fx)
-        return kx, *specs, np.sum(specs, axis=0)
-    else:
-        raise NotImplementedError
+        kD, fekD = periodogram.modal_spectrum(ar1, ar2, phys_dims=phys_dims)
+        ki, feki, wi = spectrum_integrate(kD, fekD, spec_type=st, phys_dims=phys_dims, **int_kwargs)
+        if spec_type == 'amplitude':
+            bin_center = int_kwargs.get('bin_center', True)
+            feki = translate_spectrum(ki, feki, wi, st, spec_type, grid_dims, phys_dims, D, bin_center)
+        return ki, feki, wi
 
-def translate_spectrum(k, fek, orig_type, new_type, orig_dim=None):
+    raise NotImplementedError('Not implemented method %s' % method)
+
+def translate_spectrum(b, fek, db, orig_type, new_type, grid_dims, phys_dims, orig_dim=None, bin_center=True):
     """translate_spectrum(k, fek, orig_type, new_type)
     
     Transforms a binned spectrum of `orig_type` to `new_type`
@@ -127,24 +57,22 @@ def translate_spectrum(k, fek, orig_type, new_type, orig_dim=None):
     Returns:
         np.ndarray?: New binned 1D spectrum of `new_type`
     """
+    dx = [phys_dims[i]/grid_dims[i] for i in range(len(grid_dims))]
+    dk = [2.*np.pi/L for L in phys_dims]
+
     # The amplitude calculation is the same for each dimension, if using the omni spectrum
     if new_type == 'amplitude':
         if orig_type != 'omni':
-            fek = translate_spectrum(k, fek, orig_type, 'omni')
-        return np.sqrt(k * fek)
+            fek = translate_spectrum(b, fek, orig_type, 'omni')
+        return np.sqrt(b * fek)
     if orig_type == 'amplitude':
-        return translate_spectrum(k, fek**2/k, 'omni', new_type)
+        return translate_spectrum(b, fek**2/b, 'omni', new_type)
 
     # 2D and 3D jacobians/shell areas are different
-    dim = orig_dim
-    if dim is None:
-        dim = fek.ndim
-    if dim == 1:
-        jacob = 1.
-    if dim == 2:
-        jacob = 2. * np.pi * k
-    if dim == 3:
-        jacob = 4. * np.pi * k**2
+    if bin_center:
+        jacob = statistics_base.kern_center(b, orig_dim, db, dk)
+    else:
+        jacob = statistics_base.kern(b, orig_dim, db, dk)
 
     # modal -> omni: multiply by the shell areas
     if orig_type == 'modal' and new_type == 'omni':
@@ -182,13 +110,17 @@ def spectrum_integrate(kvec, mspec, spec_type='omni', lenn=None, **kwargs):
         kwargs (dict): Additional parameters to pass onto the binning function
             cut_excess (bool): Default True. If true, cut off wavenumbers larger than the basis direction
             nan_small (bool): Default False. If true, set to nan all bins that have a small number of elements
-            min_bin (float): Default 1.0. Sets the minimum bin value
-            bin_center (bool): Default False. If true, return wavenumbers from the center of the bin region
-            norm_bin_size (bool): Default False. If true, divide by the size of the bin
+            min_bin (float): Default `dk`. Sets the minimum bin value
+            bin_center (bool): Default True. If true, return wavenumbers from the center of the bin region
+            norm_bin_size (bool): Default True. If true, divide by the size of the bin
+            log_space (bool): Logarithmically space the bins
+            num_bins (int): Number of bins to bin the wavenumbers into
+            ignore_nan (bool): If true, ignore nan (for means of 0 width etc)
+            max_half_bin_width (float): Maximum half bin width size to allow
     Returns:
-        bins (np.array): Wavenumber array
-        spec (np.ndarray): Integrated spectrum
-        std (np.ndarray): Standard deviation for the integration of the spectrum
+        bins (np.array): Binned wavenumber array
+        spec (np.ndarray): Binned spectrum
+        widths (np.ndarray): Bin widths
     """
     kmesh = wavenumber_mesh(kvec, phys_dims=lenn)
     assert np.shape(kmesh) == np.shape(mspec), 'kvec does not span mspec'
@@ -198,25 +130,24 @@ def spectrum_integrate(kvec, mspec, spec_type='omni', lenn=None, **kwargs):
         lenn = [2.*np.pi for _ in range(mspec.ndim)]
     # Minimum k is the first non-zero k value = 1*dk
     min_k = np.min([2.*np.pi/lenn[i] for i in range(mspec.ndim)])
-    min_k = 1.
     min_bin = kwargs.get('min_bin', min_k)
     max_bin = kwargs.get('max_bin', None)
     bin_center = kwargs.get('bin_center', True)
-    norm_bin_size = kwargs.get('norm_bin_size', False)
+    norm_bin_size = kwargs.get('norm_bin_size', True)
     log_space = kwargs.get('log_space', False)
     num_bins = kwargs.get('num_bins', None)
     ignore_nan = kwargs.get('ignore_nan', False)
     max_half_bin_width = kwargs.get('max_half_bin_width', None)
     if spec_type == 'omni':
         ## The omni spectrum is the integrated modal spectrum
-        bins, ispec, istd = statistics_base.bin_data(kmesh, mspec, mean_func=np.nansum, std_func=nanstderr,
+        bins, ispec, istd = statistics_base.bin_data(kmesh, mspec, mean_func=np.nansum,
             cut_excess=cut_excess, nan_small=nan_small, min_bin=min_bin, bin_center=bin_center,
             norm_bin_size=norm_bin_size, log_space=log_space, num_bins=num_bins, ignore_nan=ignore_nan,
             max_bin=max_bin, max_half_bin_width=max_half_bin_width)
         return bins, ispec, istd
     elif spec_type == 'modal':
         ## The 1D modal spectrum is the averaged ND modal spectrum
-        bins, ispec, istd = statistics_base.bin_data(kmesh, mspec, mean_func=np.nanmean, std_func=nanstderr,
+        bins, ispec, istd = statistics_base.bin_data(kmesh, mspec, mean_func=np.nanmean,
             cut_excess=cut_excess, nan_small=nan_small, min_bin=min_bin, bin_center=bin_center,
             norm_bin_size=norm_bin_size, log_space=log_space, num_bins=num_bins, ignore_nan=ignore_nan,
             max_bin=max_bin, max_half_bin_width=max_half_bin_width)
@@ -237,10 +168,6 @@ def spectrum_integrate(kvec, mspec, spec_type='omni', lenn=None, **kwargs):
     else:
         raise ValueError('Spectrum type %s is not valid' % spec_type)
 
-def nanstderr(x):
-    ## NOTE: half is because the power spectrum is symmetric
-    return np.nanstd(x)/np.sqrt(0.5*x.size)
-
 def wavenumber_mesh(kvec, phys_dims=None):
     """wavenumber_mesh(kvec)
 
@@ -248,6 +175,8 @@ def wavenumber_mesh(kvec, phys_dims=None):
 
     Args:
         kvec (tuple): Wavenumbers for each basis direction
+        phys_dims (tuple,list): If set, we normalize the wavenumber mesh by dk,
+            effectively giving the wavenumber indices
     Returns:
         km (np.ndarray): Wavenumber magnitude mesh
     """

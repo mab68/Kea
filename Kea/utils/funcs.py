@@ -99,31 +99,18 @@ def smooth_pow(xx, alphas, breaks, A=1., xn=None, **kwargs):
     a = [-alp for alp in alphas]
     bb = breaks
     terms = []
-    #for i in range(len(alphas)):
-    #    if i == 0:
-    #        terms.append((xx/bb[0])**(-a[0]))
-    #    else:
-    #        terms.append((0.5 * (1. + (xx/bb[i-1])))**(a[i-1] - a[i]))
-    #pl = A * np.prod(terms, axis=0)
-    # pl[np.where(xx == 0.)] = A
-    # noise = 0.
-    # if xn is not None:
-    #     pos = tuple([v[0] for v in np.where(xx - xn >= 0.)])
-    #     noise = np.ones_like(pl) * pl[pos]
-    #return pl + noise
-    pl = xx**(-a[0])
-    pl[~np.isfinite(pl)] = 0.
-
-    minn = np.where(xx == np.nanmin(xx))
-    idx = [m for m in minn]
-    idx[0] = slice(0,np.max(xx.shape))
-    idx = tuple(idx)
-    maxx = np.max(xx[idx])
-
-    pl[xx > maxx] = 0.
-
-    return pl
-
+    for i in range(len(alphas)):
+       if i == 0:
+           terms.append((xx/bb[0])**(-a[0]))
+       else:
+           terms.append((0.5 * (1. + (xx/bb[i-1])))**(a[i-1] - a[i]))
+    pl = A * np.prod(terms, axis=0)
+    pl[np.where(xx == 0.)] = A
+    noise = 0.
+    if xn is not None:
+        pos = tuple([v[0] for v in np.where(xx - xn >= 0.)])
+        noise = np.ones_like(pl) * pl[pos]
+    return pl + noise
 
 def beta_pow(xx, beta, rc, A=1., **kwargs):
     """beta_pow(xx, xi, rc, A, **kwargs)

@@ -62,24 +62,19 @@ def apply_ndim_window(ar, wfunc, p=1., norm=False):
         data /= np.var(pad_wf)
     return data
 
-def bin_data(nar, ar, mean_func=np.nansum, std_func=np.nanstd,
+def bin_data(nar, ar, bin_func=np.nanmean,
              cut_excess=False, nan_small=False, min_bin=None,
              max_bin=None, bin_center=True, norm_bin_size=False, log_space=False,
              num_bins=None, ignore_nan=False, max_half_bin_width=None):
-    """function_bin(ar, lags, mean_func, std_func, nan_small, bin_center)
+    """bin_data(...)
 
-    Bin functions using the `mean_func` and calculate the statistic using
-        `std_func`. By default, the `mean_func` averages the binned points
-        and `std_func` calculates the standard deviation of those averaged
-        points.
-    
-    This reduces an ND array down to 1 dimension through the `mean_func`.
+    Bin `ar` with the domain `nar` using the `bin_func`.
+    This reduces an ND array down to 1 dimension through the `bin_func`.
 
     Args:
         nar (np.ndarray): The position array to bin magnitudes of
         ar (np.ndarray): The ND array to bin down to 1D
-        mean_func (func): The function used to bin `ar`
-        std_func (func): The statistic function used to compute the statistic of the binning process
+        bin_func (func): The function used to bin `ar`
         cut_excess (bool): If true, remove binned lags greater than one of the basis directions
         nan_small (bool): If true, set the binned function to nan for when the number of points is small
         min_bin (float): Smallest bin value, if None, then automatically pick
@@ -95,7 +90,7 @@ def bin_data(nar, ar, mean_func=np.nansum, std_func=np.nanstd,
     Returns:
         bins (np.array): The bins of the computed statistics
         ar1D (np.array): Mean statistic of the binning from ND to 1D on the bins
-        std1D (np.array): Standard deviation statistic of the binning from ND to 1D
+        width (np.array): Bin widths
     """
     # Find the basis of the position array
     pos = np.where(nar == 0)
@@ -129,15 +124,13 @@ def bin_data(nar, ar, mean_func=np.nansum, std_func=np.nanstd,
     car[nar > max_bin] = np.nan
 
     # Compute the binnings
-    ar1d, bin_edges, _ = binned_statistic(nar.ravel(), car.ravel(), bins=be, statistic=mean_func)
-    std1d, _, _ = binned_statistic(nar.ravel(), car.ravel(), bins=be, statistic=std_func)
+    ar1d, bin_edges, _ = binned_statistic(nar.ravel(), car.ravel(), bins=be, statistic=bin_func)
 
     if nan_small:
         # Compute the counts, so we can ignore bad statistics
         cts, _, _ = binned_statistic(nar.ravel(), car.ravel(), bins=be, statistic='count')
         mask = cts <= 1
         ar1d[mask] = np.nan
-        std1d[mask] = np.nan
 
     if bin_center:
        # Set the bins to the mid point of the bin edges
@@ -150,38 +143,37 @@ def bin_data(nar, ar, mean_func=np.nansum, std_func=np.nanstd,
         # We should remove the bad bin edges (for the bins we don't want)
         mask = np.isin(bins1d, bins)
         ar1d = ar1d[mask]
-        std1d = std1d[mask]
         bins1d = bins1d[mask]
 
+    # Divide the functions by their bin sizes
+    # NOTE: The bin widths are actually half the bin widths
+    if max_half_bin_width:
+        # We have already calculate this
+        width = 2.*bin_widths
+    else:
+        # Otherwise, calculate from binned_statistic bin_edges
+        lower_bins, upper_bins = bin_edges[:-1], bin_edges[1:]
+        width = (upper_bins - lower_bins)
+        if max_half_bin_width is not None:
+            width = np.minimum(width, 2.*max_half_bin_width)
+
     if norm_bin_size:
-        # Divide the functions by their bin sizes
-        # NOTE: The bin widths are actually half the bin widths
-        if max_half_bin_width:
-            # We have already calculate this
-            width = 2.*bin_widths
-        else:
-            # Otherwise, calculate from binned_statistic bin_edges
-            lower_bins, upper_bins = bin_edges[:-1], bin_edges[1:]
-            width = (upper_bins - lower_bins)
-            if max_half_bin_width is not None:
-                width = np.minimum(width, 2.*max_half_bin_width)
         ar1d = ar1d / width
-        std1d = std1d / width
 
     if cut_excess:
         # Cut off lags above the basis directions
         ar1d = ar1d[bins1d <= nn[-1]]
-        std1d = std1d[bins1d <= nn[-1]]
+        width = width[bins1d <= nn[-1]]
         bins1d = bins1d[bins1d <= nn[-1]]
 
     if ignore_nan:
         # Remove nan values
         mask = np.isfinite(ar1d)
         ar1d = ar1d[mask]
-        std1d = std1d[mask]
+        width = width[mask]
         bins1d = bins1d[mask]
 
-    return bins1d, ar1d, std1d
+    return bins1d, ar1d, width
 
 def get_bins(min_bin, max_bin, nbins, max_half_bin_width=None, log_space=False):
     """get_bins(min_bin, max_bin, nbins, max_half_bin_width)
@@ -219,3 +211,54 @@ def get_bins(min_bin, max_bin, nbins, max_half_bin_width=None, log_space=False):
     # consequences of not using the above note
     bin_edges = np.unique(np.concatenate((bins-bin_width, bins+bin_width)).round(decimals=4))
     return bins, bin_width, bin_edges
+
+def kern(bins, D, db, dx):
+    """kern(bins, D, db, dx)
+
+    Calculates the number of elements within a bin of width db
+
+    Args:
+        bins (np.ndarray): Bin array
+        D (int): Euclidean dimension
+        db (np.ndarray): Bin width size
+        dx (tuple,list): Element widths for each dimension, grid size
+    Returns:
+        np.ndarray: The number of elements within a bin of width db
+    """
+    if D == 1:
+        return 2.
+    elif D == 2:
+        return (2. * np.pi * bins * db + np.pi * db**2) / np.prod(dx)**2
+    elif D == 3:
+        return (4./3.) * np.pi * (3. * bins * db**2 + 3. * bins**2 * db + db**3) / np.prod(dx)**3
+    else:
+        raise ValueError('Not implemented for dimension %s' % D)
+
+def kern_center(bins, D, db, dx):
+    """kern_center(bins, D, db, dx)
+
+    Calculates the number of elements within a bin of width db
+        when `bins` indicates the center of the bin, and we
+        go from bin-db/2 to bin+db/2.
+
+    Args:
+        bins (np.ndarray): Bin array
+        D (int): Euclidean dimension
+        db (np.ndarray): Bin width size
+        dx (tuple,list): Element widths for each dimension, grid size
+    Returns:
+        np.ndarray: The number of elements within a bin of width db
+    """
+    if D == 1:
+        return 2.
+    elif D == 2:
+        return (2. * np.pi * bins * db) / np.prod(dx)**2
+    elif D == 3:
+        return (4./3.) * np.pi * (3. * bins**2 * db + db**3 / 4.) / np.prod(dx)**3
+    else:
+        raise ValueError('Not implemented for dimension %s' % D)
+
+def nanstderr(x):
+    ## NOTE: half is because the power spectrum is symmetric
+    raise NotImplementedError('The power spectrum is symmetric, so there would be half as many independent wavenumbers.')
+    #return np.nanstd(x)/np.sqrt(0.5*x.size)

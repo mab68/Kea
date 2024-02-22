@@ -52,7 +52,8 @@ try:
     sfs = np.load('data/sfs%s.npy' % D)
 except:
     sfs = []
-    for f in fields:
+    for i, f in enumerate(fields):
+        print('strfn', i)
         lv2 = statfunc_base.get_all_lagvecs([2*n+1 for n in f.shape])
         sf2 = strfn.process_lags(f, f, lv2, periodic=True, lenn=phys_dims, shape=tuple([2*n+1 for n in f.shape]), orders=[2])[0]
         sfs.append(sf2)
@@ -62,7 +63,8 @@ try:
     lsf = np.load('data/lsf%s.npy' % D)
 except:
     lsf = []
-    for fs in sfs:
+    for i, fs in enumerate(sfs):
+        print('bin strfn', i)
         lvm = statfunc_base.get_lagvec_magnitude_array(fs.shape)
         l, sf, _ = statistics_base.bin_data(lvm, fs, mean_func=np.nanmean, cut_excess=True, min_bin=1., ignore_nan=True)
         lsf.append((l, sf))
@@ -73,6 +75,7 @@ try:
 except:
     k_arevaloz = []
     for i, f in enumerate(fields):
+        print('arevalo', i)
         lags = arevalo_spectra.k_to_discrete_lags(kfeks[i][0], N, L)
         k, fek = arevalo_spectra.modal_spectrum(f, lenn=phys_dims, lags=lags)
         k_arevaloz.append((k, fek))
