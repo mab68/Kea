@@ -13,7 +13,7 @@ import matplotlib.pyplot as plt
 import numpy as np
 
 D = 2
-N = 512
+N = 256
 L = 2.*np.pi
 grid_dims = [N for _ in range(D)]
 phys_dims = [L for _ in range(D)]

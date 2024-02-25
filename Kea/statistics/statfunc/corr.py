@@ -39,7 +39,7 @@ def process_lags(ar1, ar2, lagvecs, lenn=None, shape=None, periodic=False):
         lenn = [2. * np.pi for _ in range(ar1.ndim)]
     if shape is None:
         assert ar1.shape == ar2.shape, 'Provided arrays are not the same shape'
-        shape = tuple([2*s for s in ar1.shape])
+        shape = tuple([2*s+1 for s in ar1.shape])
     shifts = None
     if not periodic:
         shifts = statfunc_base.compute_shifted_indices(lagvecs, ar1.shape)

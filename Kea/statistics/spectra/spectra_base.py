@@ -37,8 +37,8 @@ def calculate_spectrum(ar1, ar2=None, method='periodogram', spec_type='omni', gr
         kD, fekD = periodogram.modal_spectrum(ar1, ar2, phys_dims=phys_dims)
         ki, feki, wi = spectrum_integrate(kD, fekD, spec_type=st, phys_dims=phys_dims, **int_kwargs)
         if spec_type == 'amplitude':
-            bin_center = int_kwargs.get('bin_center', True)
-            feki = translate_spectrum(ki, feki, wi, st, spec_type, grid_dims, phys_dims, D, bin_center)
+            bin_loc = int_kwargs.get('bin_loc', 'center')
+            feki = translate_spectrum(ki, feki, wi, st, spec_type, grid_dims, phys_dims, D, bin_loc == 'center')
         return ki, feki, wi
 
     raise NotImplementedError('Not implemented method %s' % method)
@@ -55,7 +55,7 @@ def translate_spectrum(b, fek, db, orig_type, new_type, grid_dims, phys_dims, or
         new_type (str): String indicating output type i.e. 'omni'
         orig_dim (int): Original dimension of `fek`, for translating binned spectra
     Returns:
-        np.ndarray?: New binned 1D spectrum of `new_type`
+        np.ndarray: New binned 1D spectrum of `new_type`
     """
     dx = [phys_dims[i]/grid_dims[i] for i in range(len(grid_dims))]
     dk = [2.*np.pi/L for L in phys_dims]
@@ -108,15 +108,7 @@ def spectrum_integrate(kvec, mspec, spec_type='omni', lenn=None, **kwargs):
                 axis (int): The axis wavenumbers to be a function of
             perp: NOT_IMPLEMENTED
         kwargs (dict): Additional parameters to pass onto the binning function
-            cut_excess (bool): Default True. If true, cut off wavenumbers larger than the basis direction
-            nan_small (bool): Default False. If true, set to nan all bins that have a small number of elements
-            min_bin (float): Default `dk`. Sets the minimum bin value
-            bin_center (bool): Default True. If true, return wavenumbers from the center of the bin region
-            norm_bin_size (bool): Default True. If true, divide by the size of the bin
-            log_space (bool): Logarithmically space the bins
-            num_bins (int): Number of bins to bin the wavenumbers into
-            ignore_nan (bool): If true, ignore nan (for means of 0 width etc)
-            max_half_bin_width (float): Maximum half bin width size to allow
+            See `statistics_base.bin_data()`
     Returns:
         bins (np.array): Binned wavenumber array
         spec (np.ndarray): Binned spectrum
@@ -132,7 +124,7 @@ def spectrum_integrate(kvec, mspec, spec_type='omni', lenn=None, **kwargs):
     min_k = np.min([2.*np.pi/lenn[i] for i in range(mspec.ndim)])
     min_bin = kwargs.get('min_bin', min_k)
     max_bin = kwargs.get('max_bin', None)
-    bin_center = kwargs.get('bin_center', True)
+    bin_loc = kwargs.get('bin_loc', 'center')
     norm_bin_size = kwargs.get('norm_bin_size', True)
     log_space = kwargs.get('log_space', False)
     num_bins = kwargs.get('num_bins', None)
@@ -141,14 +133,14 @@ def spectrum_integrate(kvec, mspec, spec_type='omni', lenn=None, **kwargs):
     if spec_type == 'omni':
         ## The omni spectrum is the integrated modal spectrum
         bins, ispec, istd = statistics_base.bin_data(kmesh, mspec, mean_func=np.nansum,
-            cut_excess=cut_excess, nan_small=nan_small, min_bin=min_bin, bin_center=bin_center,
+            cut_excess=cut_excess, nan_small=nan_small, min_bin=min_bin, bin_loc=bin_loc,
             norm_bin_size=norm_bin_size, log_space=log_space, num_bins=num_bins, ignore_nan=ignore_nan,
             max_bin=max_bin, max_half_bin_width=max_half_bin_width)
         return bins, ispec, istd
     elif spec_type == 'modal':
         ## The 1D modal spectrum is the averaged ND modal spectrum
         bins, ispec, istd = statistics_base.bin_data(kmesh, mspec, mean_func=np.nanmean,
-            cut_excess=cut_excess, nan_small=nan_small, min_bin=min_bin, bin_center=bin_center,
+            cut_excess=cut_excess, nan_small=nan_small, min_bin=min_bin, bin_loc=bin_loc,
             norm_bin_size=norm_bin_size, log_space=log_space, num_bins=num_bins, ignore_nan=ignore_nan,
             max_bin=max_bin, max_half_bin_width=max_half_bin_width)
         return bins, ispec, istd

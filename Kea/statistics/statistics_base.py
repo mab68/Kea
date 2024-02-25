@@ -64,7 +64,7 @@ def apply_ndim_window(ar, wfunc, p=1., norm=False):
 
 def bin_data(nar, ar, bin_func=np.nanmean,
              cut_excess=False, nan_small=False, min_bin=None,
-             max_bin=None, bin_center=True, norm_bin_size=False, log_space=False,
+             max_bin=None, bin_loc='center', norm_bin_size=False, log_space=False,
              num_bins=None, ignore_nan=False, max_half_bin_width=None):
     """bin_data(...)
 
@@ -81,7 +81,11 @@ def bin_data(nar, ar, bin_func=np.nanmean,
         max_bin (float): Largest bin value.
             if None, then get the largest of `nar`
             if `basis`, then choose the largest in the basis
-        bin_center (bool): If true, return bin centers rather than the left edge
+        bin_loc (str):
+            center: Places the bin in the center of the bin range.
+            true_center: Places the bins in the center of the available data,
+                this fixes problems close to 0.
+            left: Places the bins at the left bin-edge.
         norm_bin_size (bool): If true, divide the binned functions by the size of their respective bins
         log_space (bool): If true, use log-spacings
         num_bins (float): Number of bins
@@ -132,12 +136,20 @@ def bin_data(nar, ar, bin_func=np.nanmean,
         mask = cts <= 1
         ar1d[mask] = np.nan
 
-    if bin_center:
-       # Set the bins to the mid point of the bin edges
-       bins1d = (bin_edges[1:] + bin_edges[:-1])/2.
+    if bin_loc == 'center':
+        # Set the bins to the mid point of the bin edges
+        bins1d = (bin_edges[1:] + bin_edges[:-1])/2.
+    elif bin_loc == 'true_center':
+        # Set the bins to the mid point of the actual `nar` data
+        new_bins = []
+        for i in range(len(bin_edges)-1):
+            bmin, bmax = bin_edges[i], bin_edges[i+1]
+            mask = np.where(np.logical_and(nar >= bmin, nar < bmax))
+            new_bins.append((np.nanmin(nar[mask]) + np.nanmax(nar[mask]))/2.)
+        bins1d = np.array(new_bins)
     else:
-       # Set the bins to the start of the bin edges
-       bins1d = bin_edges[:-1]
+        # Set the bins to the start of the bin edges
+        bins1d = bin_edges[:-1]
 
     if max_half_bin_width is not None:
         # We should remove the bad bin edges (for the bins we don't want)

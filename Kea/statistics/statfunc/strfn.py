@@ -34,7 +34,9 @@ def process_lags(ar1, ar2, lagvecs, lenn=None, shape=None, periodic=False, order
     if lenn is None:
         lenn = [2. * np.pi for _ in range(ar1.ndim)]
     if shape is None:
-        shape = tuple([2*s for s in ar1.shape])
+        shape = tuple([2*s+1 for s in ar1.shape])
+    if isinstance(shape, list):
+        shape = tuple(shape)
     shape = (len(orders),) + shape
     orders = np.asarray(orders)
     shifts = None

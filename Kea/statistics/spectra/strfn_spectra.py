@@ -53,7 +53,7 @@ def omni_spectrum_2(ar, n=None, lenn=None):
     if n is None:
         n = statfunc_base.get_lagvec_magnitude_array(ar.shape)
     n, sf1d, _ = statistics_base.bin_data(
-        n, ar, mean_func=np.nanmean, min_bin=1., cut_excess=True, ignore_nan=True, norm_bin_size=False)
+        n, ar, bin_func=np.nanmean, min_bin=0., cut_excess=True, ignore_nan=True, norm_bin_size=False, bin_loc='center')
     N = len(n)
     dx = lenn/N
     dk = 2.*np.pi / lenn
@@ -61,7 +61,7 @@ def omni_spectrum_2(ar, n=None, lenn=None):
     dS = np.gradient(sf1d)
     ell = dx * n
     dell = np.gradient(ell)
-    fek = (dk / (2. * np.pi))**ar.ndim * (1./(8.*np.pi)) * (2.*np.pi)**ar.ndim * (ell)**2 * (dS/dell)
+    fek = (1./(8.*np.pi)) * (2.*np.pi)**ar.ndim * (ell)**2 * (dS/dell) # * (dk / (2. * np.pi))**ar.ndim
     #fek = (dk / (2. * np.pi))**ar.ndim * (ell)**2 * (dS/dell)
     return kk[::-1], fek[::-1]
 

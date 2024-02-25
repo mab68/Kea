@@ -183,7 +183,7 @@ def sigma_variance(o, ar1, exp1, ar2=None, exp2=None, xi=1e-3, mode='constant', 
 
     ## NOTE: we compute the variance of the power spectrum of the filter 
     ##       in configuration space using Parseval's theorem
-    #M = np.max([int(10. * o1*dsig + 0.5), int(10. * o2*dsig + 0.5)])
+    #M = np.max([int(5. * o1*dsig + 0.5), int(5. * o2*dsig + 0.5)])
     M = ar1.shape[0]
     cgauss1 = ndim_func(gaussian_kernel1d, ar1.shape, func_args=(o1, dx, dsig, M))
     cgauss2 = ndim_func(gaussian_kernel1d, ar1.shape, func_args=(o2, dx, dsig, M))
@@ -194,7 +194,7 @@ def sigma_variance(o, ar1, exp1, ar2=None, exp2=None, xi=1e-3, mode='constant', 
     m_comp = np.prod(np.shape(mask1)) / np.nansum(mask1)
 
     # Normalize the convolution variance with the Filter variance
-    result = m_comp * (dk / (2.*np.pi))**ar1.ndim * var / gauss_var
+    result = m_comp * var / gauss_var
     return result
 
 # def poisson_error(o, lags, fek, fek0, N, D, xi=1e-3, lenn=None):
@@ -297,7 +297,7 @@ def modal_spectrum(ar1, exp1=None, ar2=None, exp2=None, lags=None, xi=1e-3, mode
     for s, o in enumerate(lags):
         kk[s] = np.sqrt(2) / (o * dsig)
         fek[s] = sigma_variance(o, ar1, exp1, ar2, exp2, xi, mode, lenn)
-    return kk, fek
+    return kk, fek / np.sum(np.ones_like(ar1) * dx**ar1.ndim)
 
 def k_to_discrete_lags(k, N, L=2*np.pi):
     """k_to_discrete_lags(k, N, L=2.*np.pi)
