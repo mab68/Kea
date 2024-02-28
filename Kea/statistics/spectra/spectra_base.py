@@ -132,14 +132,14 @@ def spectrum_integrate(kvec, mspec, spec_type='omni', lenn=None, **kwargs):
     max_half_bin_width = kwargs.get('max_half_bin_width', None)
     if spec_type == 'omni':
         ## The omni spectrum is the integrated modal spectrum
-        bins, ispec, istd = statistics_base.bin_data(kmesh, mspec, mean_func=np.nansum,
+        bins, ispec, istd = statistics_base.bin_data(kmesh, mspec, bin_func=np.nansum,
             cut_excess=cut_excess, nan_small=nan_small, min_bin=min_bin, bin_loc=bin_loc,
             norm_bin_size=norm_bin_size, log_space=log_space, num_bins=num_bins, ignore_nan=ignore_nan,
             max_bin=max_bin, max_half_bin_width=max_half_bin_width)
         return bins, ispec, istd
     elif spec_type == 'modal':
         ## The 1D modal spectrum is the averaged ND modal spectrum
-        bins, ispec, istd = statistics_base.bin_data(kmesh, mspec, mean_func=np.nanmean,
+        bins, ispec, istd = statistics_base.bin_data(kmesh, mspec, bin_func=np.nanmean,
             cut_excess=cut_excess, nan_small=nan_small, min_bin=min_bin, bin_loc=bin_loc,
             norm_bin_size=norm_bin_size, log_space=log_space, num_bins=num_bins, ignore_nan=ignore_nan,
             max_bin=max_bin, max_half_bin_width=max_half_bin_width)

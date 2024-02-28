@@ -15,7 +15,7 @@ from scipy import fft
 from .. import statistics_base
 
 
-def modal_spectrum(ar1, ar2=None, wfunc=None, p=0.1, lenn=None, norm=True):
+def modal_spectrum(ar1, ar2=None, wfunc=None, p=0.1, phys_dims=None, norm=True):
     """spectrum(ar, len)
 
     Computes the spectrum of the given array via Fourier transform.
@@ -41,8 +41,8 @@ def modal_spectrum(ar1, ar2=None, wfunc=None, p=0.1, lenn=None, norm=True):
     """
     if ar2 is not None:
         assert ar1.shape == ar2.shape, 'Provided arrays are not equal sizes'
-    if lenn is None:
-        lenn = [2. * np.pi for _ in range(len(ar1.shape))]
+    if phys_dims is None:
+        phys_dims = [2. * np.pi for _ in range(len(ar1.shape))]
     if wfunc is not None:
         # Compute the modified periodogram
         #print('WARNING: you will need to normalize by an additional factor')
@@ -54,7 +54,7 @@ def modal_spectrum(ar1, ar2=None, wfunc=None, p=0.1, lenn=None, norm=True):
     dx = []
     dk = []
     for i, N in enumerate(ar1.shape):
-        dx.append(lenn[i]/N)
+        dx.append(phys_dims[i]/N)
         dk.append(2.*np.pi/(N*dx[i]))
         kvec.append(fft.fftshift(fft.fftfreq(N))*2.*np.pi/dx[i])
 
