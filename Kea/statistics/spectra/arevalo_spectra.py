@@ -47,52 +47,12 @@ def gaussian_kernel1d(sig, dx, dsig, M=None):
     Returns:
         np.ndarray: 1-Dimensional Gaussian in sample-space   
     """
-    ## TODO: STILL NEED TO TAKE sig=1
     sigma = float(sig) * dsig
     if M is None:
-        M = int(5. * sig + 0.5)
+        M = int(10. * sig + 0.5)
     n = np.arange(-M, M+1, 1)
     x = n * dx
     return np.exp(-x**2 / (2. * sigma**2))/np.sqrt(2. * np.pi * sigma**2)
-
-def f_gaussian_kernel1d(sig, dk, dsig, M=None):
-    """f_gaussian_kernel1d(sigma, dk, dsig, ndim, C)
-
-    Generates the sampled Fourier transform of a sampled Gaussian.
-
-    The Fourier transform of a normalized Gaussian is an 
-        unnormalized Gaussian with standard deviation `1/sigma`.
-
-    Args:
-        sig (float): The standard deviation of the sampled-Gaussian
-            NOTE: this is in terms of the sampled standard deviation
-            NOTE: this is the standard deviation of the configuration-space Gaussian
-        dk (float): Change in `k`
-        dsig (float): Change in `sigma`
-        ndim (int): Number of dimensions
-        M (int): Size of the filter (number of points to generate)
-    Returns:
-        np.ndarray: 1-Dimensional sampled Gaussian in sample-space
-    """
-    sigma = sig * dsig
-    if M is None:
-        M = int(5. * sig + 0.5)
-    m = np.arange(-M, M+1, 1)
-    k = m * dk
-    return np.exp(-k**2 * sigma**2 / 2.)
-
-def img_conv(ar, weights, dx, mode='constant'):
-    """img_conv(ar, weights, dx)
-
-    Args:
-        ar (np.ndarray):
-        weigths (np.ndarray):
-        dx (np.ndarray): 
-    Returns:
-        conv_ar (np.ndarray):
-    """
-    conv_ar = dx**ar.ndim * ndimage.convolve(ar, weights, mode=mode, cval=0.)
-    return conv_ar
 
 def img_conv_gaussian(ar, sigma, mode='constant'):
     """img_conv_gaussian(img, sigma, filter_size)
@@ -105,7 +65,7 @@ def img_conv_gaussian(ar, sigma, mode='constant'):
     Returns:
         conv_ar (np.ndarray): array convolved with the gaussian
     """
-    conv_ar = ndimage.gaussian_filter(ar, sigma, mode=mode, cval=0., truncate=10.)
+    conv_ar = ndimage.gaussian_filter(ar, sigma, mode=mode, truncate=10.)
     return conv_ar
 
 def sigma_variance(o, ar1, exp1, ar2=None, exp2=None, xi=1e-3, mode='constant', lenn=None):
@@ -134,30 +94,18 @@ def sigma_variance(o, ar1, exp1, ar2=None, exp2=None, xi=1e-3, mode='constant', 
         float: Value of the variance at scale `sigma`
     """
     dx = lenn / ar1.shape[0]
-    ds = np.sqrt(2) / np.pi
+    ds = np.sqrt(2.) / np.pi
     dsig = dx * ds
     dk = 2. * np.pi / lenn
 
     o1 = o / np.sqrt(1. + xi)
     o2 = o * np.sqrt(1. + xi)
 
-    #mask1 = exp1 > 0.
-    #if exp2 is not None:
-    #    mask2 = exp2 > 0.
-
-    ## NOTE: there is actually some intricacy here for the cross spectrum,
-    ##       the zeros in `mask1` & `mask2` may not align, leading
-    ##       to extra terms that should be cancelling (via multiplication by zero)
-    ##       that aren't.
-    ## NOTE: One second thought, no, actually the mask is purely the mask
-    ##       based off the exposure map,
-    ##       so differences in the zeros in `ar1` and `ar2` do not matter
-    ##       (are correctly handled).
     # Convolve the image with the two gaussians
-    img1_conv_gauss1 = img_conv_gaussian(ar1, o1*ds, mode)
-    exp1_conv_gauss1 = img_conv_gaussian(exp1, o1*ds, mode)
-    img1_conv_gauss2 = img_conv_gaussian(ar1, o2*ds, mode)
-    exp1_conv_gauss2 = img_conv_gaussian(exp1, o2*ds, mode)
+    img1_conv_gauss1 = img_conv_gaussian(ar1, o1, mode)
+    exp1_conv_gauss1 = img_conv_gaussian(exp1, o1, mode)
+    img1_conv_gauss2 = img_conv_gaussian(ar1, o2, mode)
+    exp1_conv_gauss2 = img_conv_gaussian(exp1, o2, mode)
     mask1 = exp1 > 0.
     mask1[exp1_conv_gauss1 == 0] = 0
     mask1[exp1_conv_gauss2 == 0] = 0
@@ -166,10 +114,10 @@ def sigma_variance(o, ar1, exp1, ar2=None, exp2=None, xi=1e-3, mode='constant', 
     filtered_image1 = exp1 * mask1 * (img1_conv_gauss1/exp1_conv_gauss1 - img1_conv_gauss2/exp1_conv_gauss2)
 
     if ar2 is not None:
-        img2_conv_gauss1 = img_conv_gaussian(ar2, o1*ds, mode)
-        exp2_conv_gauss1 = img_conv_gaussian(exp2, o1*ds, mode)
-        img2_conv_gauss2 = img_conv_gaussian(ar2, o2*ds, mode)
-        exp2_conv_gauss2 = img_conv_gaussian(exp2, o2*ds, mode)
+        img2_conv_gauss1 = img_conv_gaussian(ar2, o1, mode)
+        exp2_conv_gauss1 = img_conv_gaussian(exp2, o1, mode)
+        img2_conv_gauss2 = img_conv_gaussian(ar2, o2, mode)
+        exp2_conv_gauss2 = img_conv_gaussian(exp2, o2, mode)
         mask2 = exp2 > 0.
         mask2[exp2_conv_gauss1 == 0] = 0
         mask2[exp2_conv_gauss2 == 0] = 0
@@ -181,14 +129,14 @@ def sigma_variance(o, ar1, exp1, ar2=None, exp2=None, xi=1e-3, mode='constant', 
     # The variance requires the dx term by my definitions
     var = np.nansum(filtered_image1 * filtered_image2)
 
-    ## NOTE: we compute the variance of the power spectrum of the filter 
+    ## NOTE: we compute the variance of the power spectrum of the filter
     ##       in configuration space using Parseval's theorem
-    #M = np.max([int(5. * o1*dsig + 0.5), int(5. * o2*dsig + 0.5)])
-    M = ar1.shape[0]
-    cgauss1 = ndim_func(gaussian_kernel1d, ar1.shape, func_args=(o1, dx, dsig, M))
-    cgauss2 = ndim_func(gaussian_kernel1d, ar1.shape, func_args=(o2, dx, dsig, M))
-    cfilter = cgauss1 - cgauss2
-    gauss_var = np.nansum(np.abs(cfilter)**2)
+    M = np.max([int(10. * float(o1) + 0.5), int(10. * float(o2) + 0.5)])
+    #M = ar1.shape[0]
+    cgauss1 = gaussian_kernel1d(o1, dx, dx, M)
+    cgauss2 = gaussian_kernel1d(o2, dx, dx, M)
+    ## NOTE: Gaussian impulses are separable, so we can just integrate a 1D impulse D times
+    gauss_var = (np.nansum(cgauss1**2))**(ar1.ndim) - 2.*(np.nansum(cgauss1*cgauss2))**(ar1.ndim) + (np.nansum(cgauss2**2))**(ar1.ndim)
 
     # Mask compensation
     m_comp = np.prod(np.shape(mask1)) / np.nansum(mask1)
@@ -280,58 +228,40 @@ def modal_spectrum(ar1, exp1=None, ar2=None, exp2=None, lags=None, xi=1e-3, mode
         assert len(set(lenn)) <= 1, 'System size must be equal in all directions'
         lenn = lenn[0]
 
-    ## k \in [2pi/L, pi N/L]
-    ## sig \in [sqrt(2) L/2pi, sqrt(2)L/Npi]
-    ## o \in [1, N/2]
-    ## for dsig = dx sqrt(2)/pi = L/N sqrt(2)/pi
-    if lags is None:
-        lags = np.arange(1., ar1.shape[0]//2, 1)
-
     dx = lenn / ar1.shape[0]
-    dsig = dx * np.sqrt(2)/np.pi
+    dsig = dx * np.sqrt(2.)/np.pi
 
     Nsig = len(lags)
     fek = np.zeros(Nsig)
     kk = np.zeros(Nsig)
 
     for s, o in enumerate(lags):
-        kk[s] = np.sqrt(2) / (o * dsig)
+        #kk[s] = np.sqrt(2.) / (o * dsig)
+        if ~np.isfinite(o):
+            continue
+        kk[s] = np.sqrt(2.*ar1.ndim + 6.) / (2. * o * dx)
         fek[s] = sigma_variance(o, ar1, exp1, ar2, exp2, xi, mode, lenn)
     return kk, fek / np.sum(np.ones_like(ar1) * dx**ar1.ndim)
 
-def k_to_discrete_lags(k, N, L=2*np.pi):
-    """k_to_discrete_lags(k, N, L=2.*np.pi)
-    
-    The wavenumber:
-    :math:`k = (2 \pi / L) n = 2 \pi / \lambda`\n
-    The equivalent wavenumber from sigma is:
-    :math:`k_{equiv} = sqrt(2) / sigma`
-    Which naively leads to:
-    :math:`sigma \in [sqrt(2) L/2pi, sqrt(2) L/Npi]`\n
-    for assuming `k_{equiv}` is the same as `k`
-    :math:`k_{equiv} = k \in [2 pi/L, pi N/L]`
-
-    We instead define the sigma as:
-    :math:`sigma = o dsig = o (sqrt(2)/pi) (L/N)`\n
-    where `o` is interpreted as a 'discrete' value (although it doesn't have to be):
-    :math: `o \in [1, N//2]`
-    this also constrains the effective wavenumber `k_{equiv}` to the same domain
-    as the true wavenumber `k`. Hence we apply the following transformation
-    to convert a given wavenumber `k` to the 'discrete' `o`:
-
-    :math:`dsig = sqrt(2)/pi`\n
-    :math:`dx = L/N`\n
-    :math:`sigma = o * dsig * dx = sqrt(2) / k`\n
-    :math:`=> o = sigma / (dsig * dx)`\n
-    :math:`     = (sqrt(2) / k) / (dsig * dx)`
+def k_to_discrete_lags(k, N, L=2.*np.pi, D=2):
+    """k_to_discrete_lags(k, N, L=2.*np.pi, D=2)
 
     Args:
         k (np.array): Wavenumber array
         N (int): Number of datapoints
         L (float): Computational domain
+        D (int): Number of dimensions
     Returns:
         np.array: 'Discrete' sigma values to pass into `modal_spectrum`
     """
-    dsig = (np.sqrt(2.) / np.pi) * (L / N)
-    lags = np.sqrt(2.) / (k * dsig)
-    return lags
+    #dsig = (np.sqrt(2.) / np.pi) * (L / N)
+    #lags = np.sqrt(2.) / (k * dsig)
+    #return lags
+    dx = L / N
+    #ds = np.sqrt(2.) / np.pi
+    #lags = 2. / np.sqrt(2.*k**2 - D + 1.)
+    lags = np.sqrt(2. * D + 6.) / (2. * k)
+    return lags / dx# / ds
+
+# k = np.sqrt(2./sigma**2 + (D-1.)/2.)
+# s = 2. / np.sqrt(2.*k**2 - D + 1.)

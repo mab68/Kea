@@ -30,6 +30,7 @@ def pure_pow(xx, alphas, **kwargs):
         f(0) = 0
     and
         f(x>xmax) = 0
+    unless `outside` is True
 
     Args:
         xx (np.ndarray): Grid
@@ -41,6 +42,34 @@ def pure_pow(xx, alphas, **kwargs):
     pl = xx**(alphas[0])
     # Set where it is not defined to 0
     pl[~np.isfinite(pl)] = 0.
+    outside = kwargs.get('outside', False)
+    if not outside:
+        # Outside the axis to be 0
+        minn = np.where(xx == np.nanmin(xx))
+        idx = [m for m in minn]
+        idx[0] = slice(0,np.max(xx.shape))
+        idx = tuple(idx)
+        maxx = np.max(xx[idx])
+        pl[xx > maxx] = 0.
+    return pl
+
+def exp_pow(xx, alphas, breaks, **kwargs):
+    """exp_pow(xx, alphas)
+    
+    Generates a power law function with an exponential growth region
+
+    Args:
+        xx (np.ndarray): Grid
+        alphas (tuple): Power law values
+    Returns:
+        np.ndarray: Pure powerlaw function defined on `xx`
+    """
+    ## Function
+    bb = breaks[0]
+    a1 = alphas[0]
+    pl = np.exp(-bb/xx) * xx**(a1)
+    # Set where it is not defined to 0
+    pl[~np.isfinite(pl)] = 0.
     # Outside the axis to be 0
     minn = np.where(xx == np.nanmin(xx))
     idx = [m for m in minn]
@@ -50,40 +79,36 @@ def pure_pow(xx, alphas, **kwargs):
     pl[xx > maxx] = 0.
     return pl
 
-def bkn_pow(xx, alphas, breaks, A=1., xn=None, **kwargs):
-    """bkn_pow(xx, alphas, breaks, A, **kwargs)
+def pow_exp_decay(xx, alphas, breaks, **kwargs):
+    """pow_exp_decay(xx, alphas)
     
-    Generates a broken power law slope
-
-    Attempts to smooth the break points by applying a Gaussian blur
+    Generates a power law function with an exponential decay region
 
     Args:
-        xx (np.ndarray): 
+        xx (np.ndarray): Grid
         alphas (tuple): Power law values
-        breaks (tuple): Locations in `x` to transition power laws
-        A (float): Amplitude
-        xn (float): Noise break scale
     Returns:
-        np.ndarray: Broken power law function
+        np.ndarray: Pure powerlaw function defined on `xx`
     """
-    breakpoints = [np.min(xx)] + breaks + [np.max(xx)]
-    ar = np.zeros_like(xx)
-    for i in range(len(alphas)):
-        xmask = np.zeros_like(xx, dtype='bool')
-        xmask[np.logical_and(xx >= breakpoints[i], xx <= breakpoints[i+1])] = True
-        ar[xmask] = A*xx[xmask]**alphas[i]
-        if i < len(alphas)-1:
-            closest = xx.flat[np.abs(xx - breakpoints[i+1]).argmin()]
-            A = A*closest**(alphas[i] - alphas[i+1])
-    pl = gaussian_filter(ar, 2)
-    noise = 0.
-    if xn is not None:
-        pos = tuple([v[0] for v in np.where(xx - xn >= 0.)])
-        noise = np.ones_like(pl) * pl[pos]
-    raise ValueError('This doesn\'t work.')
-    return pl + noise
+    ## Function
+    bb = breaks[0]
+    a1 = alphas[0]
+    a2 = 1.
+    if len(breaks) > 1:
+        a2 = breaks[1]
+    pl = np.exp(-a2*xx/bb) * (xx)**(a1)
+    # Set where it is not defined to 0
+    pl[~np.isfinite(pl)] = 0.
+    # Outside the axis to be 0
+    minn = np.where(xx == np.nanmin(xx))
+    idx = [m for m in minn]
+    idx[0] = slice(0,np.max(xx.shape))
+    idx = tuple(idx)
+    maxx = np.max(xx[idx])
+    pl[xx > maxx] = 0.
+    return pl
 
-def smooth_pow(xx, alphas, breaks, A=1., xn=None, **kwargs):
+def smooth_pow(xx, alphas, breaks, delta=0.1, **kwargs):
     """smooth_pow(xx, alphas, breaks, A, **kwargs)
     
     Generates a smooth power law function
@@ -97,20 +122,19 @@ def smooth_pow(xx, alphas, breaks, A=1., xn=None, **kwargs):
         np.ndarray: Smoothed power law function
     """
     a = [-alp for alp in alphas]
-    bb = breaks
-    terms = []
-    for i in range(len(alphas)):
-       if i == 0:
-           terms.append((xx/bb[0])**(-a[0]))
-       else:
-           terms.append((0.5 * (1. + (xx/bb[i-1])))**(a[i-1] - a[i]))
-    pl = A * np.prod(terms, axis=0)
-    pl[np.where(xx == 0.)] = A
-    noise = 0.
-    if xn is not None:
-        pos = tuple([v[0] for v in np.where(xx - xn >= 0.)])
-        noise = np.ones_like(pl) * pl[pos]
-    return pl + noise
+    a1, a2 = a[0], a[1]
+    bb = breaks[0]
+    pl = (xx/bb)**(-a1) * (0.5 * (1. + (xx/bb)**(1./delta)))**((a1 - a2)*delta)
+    # Set where it is not defined to 0
+    pl[~np.isfinite(pl)] = 0.
+    # Outside the axis to be 0
+    minn = np.where(xx == np.nanmin(xx))
+    idx = [m for m in minn]
+    idx[0] = slice(0,np.max(xx.shape))
+    idx = tuple(idx)
+    maxx = np.max(xx[idx])
+    pl[xx > maxx] = 0.
+    return pl
 
 def beta_pow(xx, beta, rc, A=1., **kwargs):
     """beta_pow(xx, xi, rc, A, **kwargs)

@@ -29,8 +29,8 @@ import scipy.fft as fft
 
 from ..utils import funcs
 
-def create_fbm(grid_dims, phys_dims, alphas, breaks, gfunc='pure_pow', func_kwargs={}):
-    """create_fbm(grid_dims, phys_dims, alphas, breaks, gfunc, func_kwargs)
+def create_fbm(grid_dims, phys_dims, alphas, gfunc='pure_pow', func_kwargs={}):
+    """create_fbm(grid_dims, phys_dims, alphas, gfunc, func_kwargs)
 
     Generates an arbitrary fBm field
 
