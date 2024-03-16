@@ -32,21 +32,21 @@ class Spectrum(Statistic):
     # Dimensionality of the data
     ndim = None
     # Physical domain
-    phys_domain = None
+    phys_dims = None
     # The method used to compute the spectrum
     spectype = None
     # dk = 2pi/L
     dk = None
 
-    def __init__(self, varname, kvec, fekD, ndim, phys_domain, spectype):
-        """Spectrum(varname, kvec, fekD, ndim, phys_domain, spectype)
+    def __init__(self, varname, kvec, fekD, ndim, phys_dims, spectype):
+        """Spectrum(varname, kvec, fekD, ndim, phys_dims, spectype)
         
         Args:
             varname (str): Name of the variable the spectrum is of
             kvec (tuple): D-dimensional wavenumbers in each coordinate direction
             fekD (np.ndarray): D-dimensional power spectrum
             ndim (int): Number of dimensions in the original data
-            phys_domain (tuple): physical domain for each dimension
+            phys_dims (tuple): physical domain for each dimension
             spectpye (SpectrumMethod): Method used to compute the spectrum
         """
         super().__init__()
@@ -54,9 +54,9 @@ class Spectrum(Statistic):
         self.kvec = kvec
         self.fekD = fekD
         self.ndim = ndim
-        self.phys_domain = phys_domain
+        self.phys_dims = phys_dims
         self.spectype = spectype
-        self.dk = [2.*np.pi/L for L in phys_domain]
+        self.dk = [2.*np.pi/L for L in phys_dims]
 
     def translate(self, current_type, new_type):
         """translate(current_type, new_type)

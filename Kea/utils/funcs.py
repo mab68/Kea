@@ -53,10 +53,16 @@ def pure_pow(xx, alphas, **kwargs):
         pl[xx > maxx] = 0.
     return pl
 
-def exp_pow(xx, alphas, breaks, **kwargs):
-    """exp_pow(xx, alphas)
+def pow_exp(xx, alphas, breaks, **kwargs):
+    """pow_exp(xx, alphas, breaks)
     
-    Generates a power law function with an exponential growth region
+    Generates a power law function with an exponential growth and decay region
+
+    f(x) = x^(a) e^(-(b1/x)^2) e^(-(x/b2)^2)
+    where
+        a: inertial range powerlaw
+        b1: Injection scale
+        b2: Dissipation scale
 
     Args:
         xx (np.ndarray): Grid
@@ -65,38 +71,10 @@ def exp_pow(xx, alphas, breaks, **kwargs):
         np.ndarray: Pure powerlaw function defined on `xx`
     """
     ## Function
-    bb = breaks[0]
+    b1 = breaks[0]
+    b2 = breaks[1]
     a1 = alphas[0]
-    pl = np.exp(-bb/xx) * xx**(a1)
-    # Set where it is not defined to 0
-    pl[~np.isfinite(pl)] = 0.
-    # Outside the axis to be 0
-    minn = np.where(xx == np.nanmin(xx))
-    idx = [m for m in minn]
-    idx[0] = slice(0,np.max(xx.shape))
-    idx = tuple(idx)
-    maxx = np.max(xx[idx])
-    pl[xx > maxx] = 0.
-    return pl
-
-def pow_exp_decay(xx, alphas, breaks, **kwargs):
-    """pow_exp_decay(xx, alphas)
-    
-    Generates a power law function with an exponential decay region
-
-    Args:
-        xx (np.ndarray): Grid
-        alphas (tuple): Power law values
-    Returns:
-        np.ndarray: Pure powerlaw function defined on `xx`
-    """
-    ## Function
-    bb = breaks[0]
-    a1 = alphas[0]
-    a2 = 1.
-    if len(breaks) > 1:
-        a2 = breaks[1]
-    pl = np.exp(-a2*xx/bb) * (xx)**(a1)
+    pl = xx**(a1) * np.exp(-(b1/xx)**2) * np.exp(-(xx/b2)**2)
     # Set where it is not defined to 0
     pl[~np.isfinite(pl)] = 0.
     # Outside the axis to be 0
