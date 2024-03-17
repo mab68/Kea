@@ -5,6 +5,7 @@ from enum import Enum
 import numpy as np
 
 from Kea.statistics import moments
+from Kea.simulator import fbm
 
 from .spectrum import Spectrum, SpectrumMethod
 
@@ -49,14 +50,14 @@ class Data():
             self.basefolder = basename + '/'
 
     def set_dims(self, ndim, grid_dims, phys_dims):
-        """set_dims(grid_dims, lenn_dims)
+        """set_dims(grid_dims, phys_dims)
 
         Sets the physical and grid domains
 
         Args:
             ndim (int): Sets the number of base dimensions
             grid_dims (tuple): Sets the grid domain
-            lenn_dims (tuple): Sets the computational/physical domain
+            phys_dims (tuple): Sets the computational/physical domain
         """
         # Need to setup the physical domain etc.
         assert len(grid_dims) == len(phys_dims), 'Grid (%s) does not have the same dimensions as the computational domain (%s)' % (len(grid_dims), len(phys_dims))
@@ -72,14 +73,14 @@ class Data():
         Gets the grid and physical domains
 
         Returns:
-            shape, lenn: Tuples of the grid, and physical domains
+            grid_dims, phys_dims: Tuples of the grid, and physical domains
         """
-        shape = []
-        lenn = []
+        grid_dims = []
+        phys_dims = []
         for i in range(self.ndim):
-            shape.append(self.__getattribute__('n%s' % self.COORD_NAMES[i]))
-            lenn.append(self.__getattribute__('L%s' % self.COORD_NAMES[i]))
-        return shape, lenn
+            grid_dims.append(self.__getattribute__('n%s' % self.COORD_NAMES[i]))
+            phys_dims.append(self.__getattribute__('L%s' % self.COORD_NAMES[i]))
+        return grid_dims, phys_dims
 
     def project(self, var, axis, weights=None, moment=1, save_var=True):
         """project(var, axis)
@@ -98,8 +99,8 @@ class Data():
         else:
             axis = (axis,)
         ar = self.__getattribute__(var)
-        shape, lenn = self.get_dims()
-        proj_ar = moments.make_moment(ar, moment, shape=shape, lenn=lenn, axis=axis, take_abs=False)
+        grid_dims, phys_dims = self.get_dims()
+        proj_ar = moments.make_moment(ar, moment, shape=grid_dims, lenn=phys_dims, axis=axis, take_abs=False)
         if save_var:
             coord_str = ''
             for i in axis:
@@ -137,10 +138,10 @@ class Data():
         if v2 is not None:
             ar2 = self.__getattribute__(v2)
 
-        _, lenn = self.get_dims()
+        _, phys_dims = self.get_dims()
 
         return Spectrum.compute_spectrum(
-            ar1, ar2, lenn=lenn, method=method, varname=varz
+            ar1, ar2, phys_dims=phys_dims, method=method, varname=varz
         )
 
 
@@ -153,13 +154,29 @@ class Data():
     def modify_resolution():
         raise NotImplementedError()
     
-    def dephase_data():
-        raise NotImplementedError()
-    
+    def dephase_data(self, varz):
+        """dephase_data(varz)
+        
+        Dephase (randomize the complex phase) the field(s) named `varz`
+
+        Args:
+            vars (str, tuple): The variable to dephase
+        Returns:
+            np.ndarray: The variable with the randomized complex phase
+        """
+        if isinstance(varz, str):
+            varz = [varz]
+        for var in varz:
+            dephased = fbm.dephase_data(self.__getattribute__(var))
+            self.__setattr__(var + '_dephase', dephased)
+            print('Created %s' % (var + '_dephase'))
+        return dephased
+
     def generate_mask():
         raise NotImplementedError()
     
     def generate_exposure():
         raise NotImplementedError()
+    
 
 

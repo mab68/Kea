@@ -38,6 +38,13 @@ class Spectrum(Statistic):
     # dk = 2pi/L
     dk = None
 
+    INT_KWARGS = {
+        'cut_excess': True,
+        'nan_small': False,
+        'bin_center': 'true_center',
+        'norm_bin_size': True,
+    }
+
     def __init__(self, varname, kvec, fekD, ndim, phys_dims, spectype):
         """Spectrum(varname, kvec, fekD, ndim, phys_dims, spectype)
         
@@ -91,7 +98,7 @@ class Spectrum(Statistic):
             int_kwargs (dict): Arguments to pass onto the integration function
                 cut_excess (bool): Default True. If true, cut off wavenumbers larger than the basis direction
                 nan_small (bool): Default False. If true, set to nan all bins that have a small number of elements
-                min_bin (float): Default 1.0. Sets the minimum bin value
+                min_bin (float): Default `dk`. Sets the minimum bin value
                 bin_center (bool): Default False. If true, return wavenumbers from the center of the bin region
                 norm_bin_size (bool): Default False. If true, divide by the size of the bin
         Returns:
@@ -105,7 +112,7 @@ class Spectrum(Statistic):
         if int_type == 'reduced':
             raise NotImplementedError
 
-        kbin, specbin, stdbin = spectra_base.spectrum_integrate(self.kvec, self.fekD, int_type, self.phys_domain, **int_kwargs)
+        kbin, specbin, stdbin = spectra_base.spectrum_integrate(self.kvec, self.fekD, int_type, self.phys_dims, **int_kwargs)
 
         kwidth = None
         self.__setattr__('%s_k' % int_type, kbin)
@@ -116,7 +123,7 @@ class Spectrum(Statistic):
         return kbin, specbin
 
     @staticmethod
-    def compute_spectrum(ar1, ar2=None, exp1=None, exp2=None, lenn=None,
+    def compute_spectrum(ar1, ar2=None, exp1=None, exp2=None, phys_dims=None,
                          method=SpectrumMethod.PERIODOGRAM, method_kwargs={}, varname=None):
         """compute_spectrum(ar1, ar2, exp1, exp2, lenn, method, method_kwargs, varname)
         
@@ -125,7 +132,7 @@ class Spectrum(Statistic):
             ar2 (np.ndarray):
             exp1 (np.ndarray):
             exp2 (np.ndarray):
-            lenn (tuple):
+            phys_dims (tuple):
             method (SpectrumMethod):
             method_kwargs (dict):
             varname (str):
@@ -138,35 +145,35 @@ class Spectrum(Statistic):
             assert ar1.shape == ar2.shape, 'Provided arrays are not the same size (%s, %s)' % (ar1.shape, ar2.shape)
         if method == SpectrumMethod.PERIODOGRAM:
             # Calculate the periodogram modal spectrum
-            kvec, fekD = per_spectra.modal_spectrum(ar1, ar2, lenn=lenn, **method_kwargs)
+            kvec, fekD = per_spectra.modal_spectrum(ar1, ar2, phys_dims=phys_dims, **method_kwargs)
         elif method == SpectrumMethod.CORRELOGRAM:
             # Calculate the correlation function first
             lv_acf = statfunc_base.get_all_lagvecs([2*n+1 for n in ar1.shape])
-            acf = corr.process_lags(ar1, ar2, lv_acf, periodic=True, lenn=lenn, shape=tuple([2*n+1 for n in ar1.shape]))
+            acf = corr.process_lags(ar1, ar2, lv_acf, periodic=True, lenn=phys_dims, shape=tuple([2*n+1 for n in ar1.shape]))
             acf = statfunc_base.cut_at_lag(acf, np.min(ar1.shape)//2)
             # Then calculate the spectrum
-            kvec, fekD = corr_spectra.modal_spectrum(acf, lenn=lenn)
+            kvec, fekD = corr_spectra.modal_spectrum(acf, lenn=phys_dims)
         elif method == SpectrumMethod.FLATSKY:
-            modal_k, modal_fek, modal_err = flatsky_spectra.modal_spectrum(ar1, ar2, lenn=lenn)
+            modal_k, modal_fek, modal_err = flatsky_spectra.modal_spectrum(ar1, ar2, lenn=phys_dims)
             kvec, fekD = None, None
             ## TODO: save the error
         elif method == SpectrumMethod.AREVALO:
             N = np.min(ar1.shape)
-            L = lenn[np.where(ar1.shape == N)]
+            L = np.min(phys_dims)
             k = fft.fftshift(fft.fftfreq(N))*2.*np.pi/(L/N)
             lags = arevalo_spectra.k_to_discrete_lags(k, N, L)
-            modal_k, modal_fek = arevalo_spectra.modal_spectrum(ar2, ar2=ar2, lags=lags, lenn=lenn, **method_kwargs)
+            modal_k, modal_fek = arevalo_spectra.modal_spectrum(ar1, ar2=ar2, lags=lags, lenn=phys_dims, **method_kwargs)
             kvec, fekD = None, None
             ## TODO: Would the wavenumber 'error'/binning be the width of the difference of Gaussians?
         elif method == SpectrumMethod.STRFN:
             # Calculate the structure function first
             lv_sf = statfunc_base.get_all_lagvecs([2*n+1 for n in ar1.shape])
-            sf2 = strfn.process_lags(ar1, ar2, lv_sf, periodic=False, lenn=lenn, shape=tuple([2*n+1 for n in ar1.shape]), orders=[2])[0]
+            sf2 = strfn.process_lags(ar1, ar2, lv_sf, periodic=False, lenn=phys_dims, shape=tuple([2*n+1 for n in ar1.shape]), orders=[2])[0]
             # Then calculate the spectrum
-            omni_k, omni_fek = strfn_spectra.omni_spectrum(sf2, lenn=lenn)
+            omni_k, omni_fek = strfn_spectra.omni_spectrum(sf2, lenn=phys_dims)
         else:
             raise ValueError('Bad method type (%s)' % method)
-        spectrum = Spectrum(varname, kvec, fekD, ndim, lenn, method)
+        spectrum = Spectrum(varname, kvec, fekD, ndim, phys_dims, method)
 
         if method == SpectrumMethod.AREVALO or method == SpectrumMethod.FLATSKY:
             spectrum.__setattr__('modal_k', modal_k)

@@ -13,7 +13,7 @@ import matplotlib.pyplot as plt
 import numpy as np
 
 try:
-    import load_data
+    from paper1 import load_data
 except FileNotFoundError:
     pass
 

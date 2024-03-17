@@ -51,7 +51,7 @@ class SimulationData(Data):
                 tt = str(time).zfill(2)
             else:
                 tt = '04'
-            if 'V' in var:
+            if 'v' in var or 'V' in var:
                 vv = 'v'
             elif 'rho' in var:
                 vv = 'rho'

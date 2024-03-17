@@ -12,7 +12,7 @@ import matplotlib.pyplot as plt
 
 import numpy as np
 
-D = 2
+D = 3
 N = 256
 L = 2.*np.pi
 grid_dims = [N for _ in range(D)]
@@ -28,7 +28,10 @@ alphas = np.linspace(max, min, NUM)
 FOLDER = ''
 DATA_FOLDER = FOLDER + 'data/'
 
-fields = np.load(DATA_FOLDER + 'fields%s_%s.npy' % (D,N))
-models = np.load(DATA_FOLDER + 'models%s_%s.npy' % (D, N))
-kfeks = np.load(DATA_FOLDER + 'kfeks%s_%s.npy' % (D, N))
-k_arevaloz = np.load(DATA_FOLDER + 'karevalo%s_%s.npy' % (D, N))
+try:
+    fields = np.load(DATA_FOLDER + 'fields%s_%s.npy' % (D,N))
+    models = np.load(DATA_FOLDER + 'models%s_%s.npy' % (D, N))
+    kfeks = np.load(DATA_FOLDER + 'kfeks%s_%s.npy' % (D, N))
+    k_arevaloz = np.load(DATA_FOLDER + 'karevalo%s_%s.npy' % (D, N))
+except:
+    pass
