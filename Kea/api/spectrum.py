@@ -5,6 +5,7 @@ from enum import Enum
 import numpy as np
 
 from scipy import fft
+from scipy.interpolate import interp1d
 
 from Kea.statistics.spectra import arevalo_spectra, corr_spectra, flatsky_spectra, per_spectra, spectra_base, strfn_spectra
 from Kea.statistics.statfunc import statfunc_base, corr, strfn
@@ -82,6 +83,43 @@ class Spectrum(Statistic):
         fek = self.__getattribute__('%s_fek' % current_type)
         knew, feknew = spectra_base.translate_spectrum(k, fek, current_type, new_type, self.ndim)
         return knew, feknew
+
+    def interpolate(self, new_k, spec_type='modal'):
+        """interpolate(new_k, spec_type)
+        
+        1D interpolates `spec_type` onto `new_k`
+
+        Args:
+            new_k (np.ndarray): The new 1D wavenumber array to interpolate onto
+            spec_type (str): The spectrum type to interpolate from
+        Returns:
+            np.ndarray: 1D interpolated spectrum
+        """
+        k = self.__getattribute__(spec_type + '_k')
+        fek = self.__getattribute__(spec_type + '_fek')
+        interp_func = interp1d(np.log10(k), np.log10(fek), kind='linear', fill_value='extrapolate')
+        interp_fek = 10**interp_func(np.log10(new_k))
+        return interp_fek
+
+    def bias(self, other_spectrum, spec_type='modal'):
+        """bias(other_spectrum, spec_type)
+        
+        Calculates the bias of this spectrum to the other spectrum
+
+        Args:
+            other_spectrum (Spectrum): The spectrum to compare to
+            spec_type (str): 
+        Returns:
+            np.ndarray: The 1D wavenumber array
+            np.ndarray: The 1D bias as a function of wavenumber
+        """
+        k1 = self.__getattribute__(spec_type + '_k')
+        fek1 = self.__getattribute__(spec_type + '_fek')
+        k2 = other_spectrum.__getattribute__(spec_type + '_k')
+        fek2 = other_spectrum.__getattribute__(spec_type + '_fek')
+        if not np.all(k1 == k2):
+            fek1 = self.interpolate(k2, spec_type)
+        return k2, fek1/fek2
 
     def integrate(self, int_type='modal', int_kwargs={}):
         """integrate(int_type, int_kwargs)

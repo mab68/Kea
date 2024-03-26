@@ -65,6 +65,8 @@ def img_conv_gaussian(ar, sigma, mode='constant'):
     Returns:
         conv_ar (np.ndarray): array convolved with the gaussian
     """
+    ## TODO: Think about other filters...
+    ## i.e. boxcar
     conv_ar = ndimage.gaussian_filter(ar, sigma, mode=mode, truncate=10.)
     return conv_ar
 

@@ -272,5 +272,5 @@ def kern_center(bins, D, db, dx):
 
 def nanstderr(x):
     ## NOTE: half is because the power spectrum is symmetric
-    raise NotImplementedError('The power spectrum is symmetric, so there would be half as many independent wavenumbers.')
-    #return np.nanstd(x)/np.sqrt(0.5*x.size)
+    #raise NotImplementedError('The power spectrum is symmetric, so there would be half as many independent wavenumbers.')
+    return np.nanstd(x)#/np.sqrt(0.5*x.size)

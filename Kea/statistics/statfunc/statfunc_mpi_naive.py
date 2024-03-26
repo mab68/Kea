@@ -94,6 +94,7 @@ def strfn(X1, X1p, X2, X2p, shape, lenn, orders):
         a1 = moments.make_moment(X1 - X2p, moment=o, shape=shape, take_abs=True, lenn=lenn)
         a2 = moments.make_moment(X2 - X1p, moment=o, shape=shape, take_abs=True, lenn=lenn)
         sfs.append(0.5 * a1 + 0.5 * a2)
+        #sfs.append(np.nanmean(np.abs(X1 - X2p)**o))
     return sfs
 
 def process_lags(ar1, ar2, lagvecs, shifts, shape, lagvec_func, lagvec_args):

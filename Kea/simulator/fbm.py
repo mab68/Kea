@@ -139,6 +139,22 @@ def dephase_data(ar):
     far = fft.fftn(ar)
     phases = np.random.uniform(0, 2.*np.pi, size=ar.shape)
     far_dephased = np.abs(far) * (np.cos(phases) + 1j * np.sin(phases))
+
+    grid_dims = ar.shape
+
+    args = [[n//2, 0] for n in grid_dims]
+    idx = list(itertools.product(*args))
+    for i in range(len(idx)):
+        far_dephased[tuple(idx[i])] = far_dephased[tuple(idx[i])].real + 1j * 0.
+
+    # NOTE: There is redundant computation here
+    l_args = [[slice(1, n//2 + 1), slice(n, n//2 - 1, -1), 0, n//2] for n in grid_dims]
+    l_idx = list(itertools.product(*l_args))
+    r_args = [[slice(n, n//2 - 1, -1), slice(1, n//2 + 1), 0, n//2] for n in grid_dims]
+    r_idx = list(itertools.product(*r_args))
+    for i in range(len(l_idx)):
+        far_dephased[tuple(l_idx[i])] = np.conjugate(far_dephased[tuple(r_idx[i])])
+
     fbm_field = fft.ifftn(far_dephased).real
     return fbm_field
 
