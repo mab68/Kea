@@ -20,6 +20,24 @@ import scipy.fft as fft
 from scipy.ndimage import gaussian_filter
 
 
+def analytical_pow(xx, alphas, **kwargs):
+    ## Function
+    v = (- alphas[0] - 1) / 2.
+    a = np.sqrt(2.) * gamma(v + 0.5) / gamma(v)
+    pl = (2./np.pi)*(a**2 / (a**2 + xx**2))**((1. + 2.*v) / 2.)
+    # Set where it is not defined to 0
+    pl[~np.isfinite(pl)] = 0.
+    outside = kwargs.get('outside', False)
+    if not outside:
+        # Outside the axis to be 0
+        minn = np.where(xx == np.nanmin(xx))
+        idx = [m for m in minn]
+        idx[0] = slice(0,np.max(xx.shape))
+        idx = tuple(idx)
+        maxx = np.max(xx[idx])
+        pl[xx > maxx] = 0.
+    return pl
+
 def pure_pow(xx, alphas, **kwargs):
     """pure_pow(xx, alphas)
     
