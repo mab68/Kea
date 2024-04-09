@@ -124,7 +124,7 @@ def spectrum_integrate(kvec, mspec, spec_type='omni', lenn=None, **kwargs):
     min_k = np.min([2.*np.pi/lenn[i] for i in range(mspec.ndim)])
     min_bin = kwargs.get('min_bin', min_k)
     max_bin = kwargs.get('max_bin', None)
-    bin_loc = kwargs.get('bin_loc', 'center')
+    bin_loc = kwargs.get('bin_loc', 'true_center')
     norm_bin_size = kwargs.get('norm_bin_size', True)
     log_space = kwargs.get('log_space', False)
     num_bins = kwargs.get('num_bins', None)

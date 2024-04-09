@@ -21,9 +21,28 @@ from scipy.ndimage import gaussian_filter
 
 
 def analytical_pow(xx, alphas, **kwargs):
+    """analytical_pow(xx, alphas, break)
+    
+    Generates a pure powerlaw function with a break scale
+
+        f(x) = 2/pi (a^2/(a^2 + x^2))^(alpha)
+    where
+        f(0) = 0
+    and
+        f(x>xmax) = 0
+    unless 'outside' is True
+
+    Args:
+        xx (np.ndarray): Grid
+        alphas (tuple): Power law values
+        break (float): Default 1., where the break scale is located
+    Returns:
+        np.ndarray: Pure powerlaw function defined on `xx`
+    """
     ## Function
     v = (- alphas[0] - 1) / 2.
-    a = np.sqrt(2.) * gamma(v + 0.5) / gamma(v)
+    #a = np.sqrt(2.) * gamma(v + 0.5) / gamma(v)
+    a = kwargs.get('breaks', 1.)
     pl = (2./np.pi)*(a**2 / (a**2 + xx**2))**((1. + 2.*v) / 2.)
     # Set where it is not defined to 0
     pl[~np.isfinite(pl)] = 0.

@@ -96,6 +96,8 @@ def bin_data(nar, ar, bin_func=np.nanmean,
         ar1D (np.array): Mean statistic of the binning from ND to 1D on the bins
         width (np.array): Bin widths
     """
+    nar = (nar.copy()).round(decimals=10)
+
     # Find the basis of the position array
     pos = np.where(nar == 0)
     basis_index = [pos[i][0] for i in range(len(pos))]
@@ -104,7 +106,7 @@ def bin_data(nar, ar, bin_func=np.nanmean,
     nn = narbasis[pos[0][0]:]
 
     # Calculate the bin space
-    # Assume that the array is evenly space (this is an assumption made with everything)
+    # Assume that the array is evenly spaced (this is an assumption made with everything)
     if min_bin is None:
         # If no minimum bin specified, then automatically choose one
         min_bin = np.nanmin(nn)
@@ -130,12 +132,6 @@ def bin_data(nar, ar, bin_func=np.nanmean,
     # Compute the binnings
     ar1d, bin_edges, _ = binned_statistic(nar.ravel(), car.ravel(), bins=be, statistic=bin_func)
 
-    if nan_small:
-        # Compute the counts, so we can ignore bad statistics
-        cts, _, _ = binned_statistic(nar.ravel(), car.ravel(), bins=be, statistic='count')
-        mask = cts <= 1
-        ar1d[mask] = np.nan
-
     if bin_loc == 'center':
         # Set the bins to the mid point of the bin edges
         bins1d = (bin_edges[1:] + bin_edges[:-1])/2.
@@ -143,9 +139,12 @@ def bin_data(nar, ar, bin_func=np.nanmean,
         # Set the bins to the mid point of the actual `nar` data
         new_bins = []
         for i in range(len(bin_edges)-1):
-            bmin, bmax = bin_edges[i], bin_edges[i+1]
+            bmin, bmax = bin_edges[i].round(decimals=10), bin_edges[i+1].round(decimals=10)
             mask = np.where(np.logical_and(nar >= bmin, nar < bmax))
-            new_bins.append((np.nanmin(nar[mask]) + np.nanmax(nar[mask]))/2.)
+            if nar[mask].size == 0:
+                new_bins.append((bmin + bmax)/2.)
+            else:
+                new_bins.append((np.nanmin(nar[mask]) + np.nanmax(nar[mask]))/2.)
         bins1d = np.array(new_bins)
     else:
         # Set the bins to the start of the bin edges
@@ -171,6 +170,12 @@ def bin_data(nar, ar, bin_func=np.nanmean,
 
     if norm_bin_size:
         ar1d = ar1d / width
+
+    if nan_small:
+        # Compute the counts, so we can ignore bad statistics
+        cts, _, _ = binned_statistic(nar.ravel(), car.ravel(), bins=be, statistic='count')
+        mask = cts <= 1
+        ar1d[mask] = np.nan
 
     if cut_excess:
         # Cut off lags above the basis directions
@@ -211,7 +216,7 @@ def get_bins(min_bin, max_bin, nbins, max_half_bin_width=None, log_space=False):
     ## NOTE: Inherited code converts to integers; there are probably problems
     ##        with doing this... and also not doing this...
     ## valid_bins = np.unique(bin_range.astype(int))
-    valid_bins = np.unique(bin_range.round(decimals=4))
+    valid_bins = np.unique(bin_range.round(decimals=10))
 
     lower_bins, upper_bins = valid_bins[:-1], valid_bins[1:]
 
@@ -221,7 +226,7 @@ def get_bins(min_bin, max_bin, nbins, max_half_bin_width=None, log_space=False):
 
     bins = upper_bins - bin_width
     # consequences of not using the above note
-    bin_edges = np.unique(np.concatenate((bins-bin_width, bins+bin_width)).round(decimals=4))
+    bin_edges = np.unique(np.concatenate((bins-bin_width, bins+bin_width)).round(decimals=10))
     return bins, bin_width, bin_edges
 
 def kern(bins, D, db, dx):
