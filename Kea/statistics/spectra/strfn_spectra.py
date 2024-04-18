@@ -33,77 +33,25 @@ def interpolate(k_sf, fek_sf, k_interp):
     fek_new = f_int(np.log10(k_interp))
     return 10**fek_new
 
-def omni_spectrum_2(ar, n=None, lenn=None):
-    # if lenn is None:
-    #     lenn = 2.*np.pi
-    # if nar is None:
-    #     nar = statfunc_base.get_lagvec_magnitude_array(ar.shape)
-    # nar, sf1d, _ = statistics_base.bin_data(
-    #     nar, ar, mean_func=np.nanmean, min_bin=1., cut_excess=True, ignore_nan=True, norm_bin_size=False)
-    # N = len(nar)
-    # dx = lenn/N
-    # dk = 2.*np.pi/(N*dx)
-    # kk = 2.*np.pi / (dx * nar)
 
-    # dS = np.gradient(sf1d)
-    # fek = - (1./(8.*np.pi)) * (2.*np.pi)**ar.ndim * nar**2 * (dS/dx)
-    # return kk, fek
-    if lenn is None:
-        lenn = 2.*np.pi
-    if n is None:
-        n = statfunc_base.get_lagvec_magnitude_array(ar.shape)
-    n, sf1d, _ = statistics_base.bin_data(
-        n, ar, bin_func=np.nanmean, min_bin=0., cut_excess=True, ignore_nan=True, norm_bin_size=False, bin_loc='center')
-    N = len(n)
-    dx = lenn/N
-    dk = 2.*np.pi / lenn
-    kk = 2.*np.pi / (dx*n)
-    dS = np.gradient(sf1d)
-    ell = dx * n
-    dell = np.gradient(ell)
-    fek = (1./(8.*np.pi)) * (2.*np.pi)**ar.ndim * (ell)**2 * (dS/dell) # * (dk / (2. * np.pi))**ar.ndim
-    #fek = (dk / (2. * np.pi))**ar.ndim * (ell)**2 * (dS/dell)
-    return kk[::-1], fek[::-1]
-
-def omni_spectrum(ar, nar=None, lenn=None):
-    """omni_spectrum(ar)
-
-    Computes the omni-directional spectrum of the given array via multiplying the
-        structure function by the lag space.
+def omni_spectrum(ell, sf2, a=1., b=1.):
+    """omni_spectrum(ell, sf2, a, b)
     
-    NOTE: This will not follow Parseval's theorem, but will follow other power spectra
+    Calculates the equivalent spectrum, the integrated/omni spectrum
+        from the derivative of the structure function
+
+    `a`, and `b` are scalings for the ambiguity present in the equivalent
+        wavenumber
 
     Args:
-        ar (np.ndarray): N-dimensional second order structure function
-        nar (nd.ndarray, None): Array of lag vector magnitudes of the structure function
-        lenn (float): Box size
-    Returns:
-        kk (np.ndarray): Equivalent wavenumber
-        fek (np.ndarray): The equivalent SF spectra
+        ell (np.ndarray): 
+        sf2 (np.ndarray): Averaged 2nd order structure function
     """
-    if lenn is None:
-        lenn = 2. * np.pi
-    if nar is None:
-        # We need to make sure we have a lag array
-        nar = statfunc_base.get_lagvec_magnitude_array(np.shape(ar))
-    else:
-        assert np.shape(ar) == np.shape(nar), 'Provided lag array is not the same shape as the array'
 
-    #if len(np.shape(ar)) > 1:
-    # We need to make sure we have averaged the structure function down to 1D
+    dS = np.gradient(sf2)
+    dell = np.gradient(ell)
 
-    # NOTE: nar is the grid-lags i.e. `n` so need to multiply by dx to get the 'true' distance lags
-    #nar, sf1d, _ = statistics_base.bin_data(
-    #    nar, ar, mean_func=np.nanmean, bin_center=True, min_bin=1., norm_bin_size=False, cut_excess=True)
-    nar, sf1d, _ = statistics_base.bin_data(
-        nar, ar, mean_func=np.nanmean, min_bin=1., cut_excess=True, ignore_nan=True, norm_bin_size=False)
+    fek = (ell)**2 * (dS/dell) * (1. / 2.) / a
+    kk = b / ell
 
-    N = len(nar)
-    dx = lenn/N
-    dk = 2.*np.pi/(N*dx)
-
-    # Either normalize by 1/ndx or 2pi/ndx, where ndx = x
-    kk = 2. * np.pi / (dx * nar)
-
-    fek = (dk / (2. * np.pi)) * sf1d / kk
     return kk[::-1], fek[::-1]
