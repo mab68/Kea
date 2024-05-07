@@ -78,7 +78,9 @@ def modify_rc():
     """
     mpl.rcParams['figure.dpi'] = 250
     mpl.rc('text', usetex=True)
-    mpl.rcParams['text.latex.preamble']=[r"\usepackage{bm}"]
+    mpl.rc('text.latex', preamble=r'''\usepackage{bm}
+\usepackage{xcolor}''')
+    #mpl.rcParams['text.latex.preamble']=[r"\usepackage{bm}", r"\usepackage{xcolor}"]
     mpl.rc('font', family='serif', serif='cm10', size=8)
 
 def set_logticks(ax, x=False, y=True, numticks=10):

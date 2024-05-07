@@ -173,5 +173,5 @@ def mpi_pool_lagvecs(ar1, ar2, lagvecs, shifts, shape, lagvec_func, lagvec_args)
     # Wait until everyone has finished processing
     comm.Barrier()
     # Retrieve and combine functions
-    statfunc = comm.Gather(statfunc, root=0)
+    statfunc = comm.Gather(statfunc, statfunc, root=0)
     return statfunc
