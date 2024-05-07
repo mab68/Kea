@@ -17,7 +17,7 @@ import h5py
 import numpy as np
 
 
-def read_h5_data(keys, folder_name=None, file_name=None):
+def read_h5_data(keys, folder_name=None, file_name=None, load=True):
     """read_h5_data(keys, folder_name=None, file_name=None)
 
     Returns data from h5 file as numpy array
@@ -46,10 +46,13 @@ def read_h5_data(keys, folder_name=None, file_name=None):
     return_vals = []
     for k in keys:
         if k in file.keys():
-            val = file[k][...].astype(float)
-            if sformat:
-                val = val[:,:,0:256]
-            return_vals.append(val)
+            if load:
+                val = file[k][...].astype(float)
+                if sformat:
+                    val = val[:,:,0:256]
+                return_vals.append(val)
+            else:
+                return_vals.append(val[k])
         else:
             raise ValueError('Key %s not in file %s' % (k, file_name))
     #file.close()

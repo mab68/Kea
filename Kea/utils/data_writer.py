@@ -11,7 +11,7 @@ numpy_to_npy\n
 """
 
 import numpy as np
-
+import h5py
 
 def pluto_grid_file(grid, filename='grid0.out'):
     """pluto_grid_file(grid, filename)
@@ -60,3 +60,19 @@ def numpy_to_npy(ar, filename):
         filename (str): Filename to save the file to
     """
     np.save(filename, ar)
+
+def save_h5(ar, filename, dataname):
+    """save_h5(ar, filename, dataname)
+
+    Makes a h5 file
+
+    Args:
+        ar (np.ndarray): File to save into the h5 file
+        filename (str): Name of the file
+        dataname (str): Name of the data that is being stored
+    Returns:
+        h5py.File: h5 File object with `ar` inside
+    """
+    f = h5py.File(filename, 'a')
+    f.create_dataset(dataname, data=ar)
+    return f
