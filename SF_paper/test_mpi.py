@@ -1,4 +1,6 @@
 
+## mpi -np 4 python3 test_mpi
+
 from mpi4py import MPI
 import h5py
 import numpy as np

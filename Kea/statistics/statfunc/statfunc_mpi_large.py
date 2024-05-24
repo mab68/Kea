@@ -162,14 +162,14 @@ def mpi_pool_lagvecs(ar1, ar2, lagvecs, shifts, shape, lagvec_func, lagvec_args)
     else:
         shifts = None
     comm.Barrier()
-    shifts = comm.scatter(shifts, root=0)
-    print('starting %s:%s' % (comm.Get_rank(), shifts.shape))
+    split_shifts = comm.scatter(shifts, root=0)
+    print('starting %s:%s' % (comm.Get_rank(), split_shifts.shape))
     # Compute lag function
-    statfunc = process_lags(ar1, ar2, lagvecs, shifts, shape, lagvec_func, lagvec_args)
+    statfunc = process_lags(ar1, ar2, lagvecs, split_shifts, shape, lagvec_func, lagvec_args)
     # Wait until everyone has finished processing
     comm.Barrier()
     # Retrieve and combine functions
     print((((len(lagvecs)+1)//8)+1)*8)
     rcv = np.zeros((((len(lagvecs)+1)//8)+1)*8)
     comm.Gather(statfunc, rcv, root=0)
-    return rcv
+    return np.array_split(lagvecs, comm.Get_size(), axis=0), rcv

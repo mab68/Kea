@@ -151,13 +151,24 @@ file = h5py.File(NAME, 'r')
 print(np.shape(file['subset']))
 lv_p = statfunc_base.get_all_lagvecs([n+1 for n in grid_dims])
 print(np.shape(lv_p))
-sf_p = strfn.process_lags(file['subset'], file['subset'], lv_p,
+lv, sf_p = strfn.process_lags(file['subset'], file['subset'], lv_p,
                           lenn=phys_dims, shape=[n+1 for n in grid_dims], orders=[2], periodic=False)
+## TODO: return lagvecs for each core, and sf for each core
+## TODO: then we will need to combine properly
 
 comm.Barrier()
 print('Fin. %s' % rank)
 
 if rank == 0:
-    np.save('sf.npy', sf_p)
+    #print(np.shape(lv))
+    #lvm = statfunc_base.get_lagvec_magnitude_array([n+1 for n in grid_dims])*dx
+    #sf_A = np.zeros([n+1 for n in grid_dims])
+    #for i in range(len(shifts)):
+    #    shifts[i]
+    #    
+    #    func_indices = tuple([lagvecs[i][j] + (shape[j]//2) for j in range(ar1.ndim)])
+    #    func_indices = tuple(np.array(func_indices)[::-1])
+    #np.save('sf.npy', sf_p)
+    #np.save('shifts.npy', shifts)
 
 file.close()
