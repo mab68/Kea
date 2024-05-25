@@ -32,7 +32,7 @@ def get_loglags(max_lag, n_lags, max_half_bin_width=None):
         lags (array): The log lags
         lag_bin_width (array): Bin widths for each log-lag
     """
-    raise NotImplementedError('Call `statistics_base.get_bins()` for this')
+    #raise NotImplementedError('Call `statistics_base.get_bins()` for this')
     ## FIXME: THIS ACTUALLY GENERATES n+1 LAGS
     ## FIXME: THIS MIGHT NOT BE WELL DEFINED FOR SOME PARAMETER SPACES
     lag_range = np.exp(np.linspace(0, np.log(max_lag+1), n_lags+2))
