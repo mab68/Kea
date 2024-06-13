@@ -25,18 +25,18 @@ import h5py
 
 import os
 
-D = [2]#, 3]
-N2 = [64]#, 128, 256, 512, 1024, 2048]
-N3 = [64]#, 128]
+D = [2, 3]
+N2 = [64, 128, 256, 512, 1024, 2048]
+N3 = [64, 128]
 
 L = 2.*np.pi
 dk = 2.*np.pi/L
 
-break_k = 3. * dk
+break_k = 8. * dk
 diss_k = 1000. * dk
 
 # DATA_DIR=/nfs/scratch/bishopm1/data
-DATA_DIR = '/home/m/Documents/science_codes/Kea/SF_paper'#os.environ['DATA_DIR']
+DATA_DIR = os.environ['DATA_DIR']
 NAME_PREFIX = DATA_DIR + '/SF_TEST/'
 
 for d in D:
@@ -54,7 +54,7 @@ for d in D:
         grid_dims = [n for _ in range(d)]
         phys_dims = [L for _ in range(d)]
 
-        alph = d + 5./3.
+        alph = d + 2./3.
 
         field = fbm.create_fbm(grid_dims, phys_dims, (-alph,), gfunc='pow_exp', func_kwargs={'breaks': (break_k, diss_k)})
         print('generated field %s^%s (%s)' % (n, d, alph))

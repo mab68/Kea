@@ -1,0 +1,15 @@
+Reading from the hdf5 files
+
+Number of processors in x direction: 16
+Number of processors in z direction: 4
+
+Computing S(lx, lz) using 2D scalar field data..
+Writing 2 order to file.
+
+Writing completed
+
+Time elapsed for the parallel part: 80.767
+
+Total time elapsed: 80.8716
+
+Program ends.

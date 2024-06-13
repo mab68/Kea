@@ -12,7 +12,7 @@ autocorrelation_to_strfn\n
 
 import numpy as np
 
-from . import statfunc_base, statfunc_mpi_large
+from . import statfunc_base, statfunc_mpi_naive
 
 
 def process_lags(ar1, ar2, lagvecs, lenn=None, shape=None, periodic=False, orders=[2]):
@@ -42,7 +42,7 @@ def process_lags(ar1, ar2, lagvecs, lenn=None, shape=None, periodic=False, order
     shifts = None
     if not periodic:
         shifts = statfunc_base.compute_shifted_indices(lagvecs, ar1.shape)
-    sf = statfunc_mpi_large.mpi_pool_lagvecs(ar1, ar2, lagvecs, shifts, shape, statfunc_mpi_large.strfn, (lenn, orders,))
+    sf = statfunc_mpi_naive.mpi_pool_lagvecs(ar1, ar2, lagvecs, shifts, shape, statfunc_mpi_naive.strfn, (lenn, orders,))
     return sf
 
 def autocorrelation_to_strfn(ar):
