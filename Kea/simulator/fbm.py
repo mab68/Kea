@@ -29,7 +29,7 @@ import scipy.fft as fft
 
 from ..utils import funcs
 
-def create_fbm(grid_dims, phys_dims, alphas, gfunc='pure_pow', func_kwargs={}):
+def create_fbm(grid_dims, phys_dims, alphas, gfunc='pure_pow', func_kwargs={}, A=1.):
     """create_fbm(grid_dims, phys_dims, alphas, gfunc, func_kwargs)
 
     Generates an arbitrary fBm field
@@ -66,7 +66,7 @@ def create_fbm(grid_dims, phys_dims, alphas, gfunc='pure_pow', func_kwargs={}):
     output = gfunc(kk, alphas, **func_kwargs).astype('complex')
     #C = 2. / dkD
     C = np.nanmean(output) / np.prod(grid_dims)
-    output = np.sqrt(output / C)
+    output = np.sqrt(A * output / C)
 
     # Random phases
     phases = np.random.uniform(0, 2.*np.pi, size=grid_dims)
