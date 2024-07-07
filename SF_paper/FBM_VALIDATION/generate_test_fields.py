@@ -25,19 +25,19 @@ import h5py
 
 import os
 
-D = [1, 2, 3]
+D = [1, 2]#, 3]
 N1 = [10000]
-N2 = [8000]
+N2 = [2048]
 N3 = [512]
 
-A_factor = 4
+A_factor = 2
 
 L = 2.*np.pi
 
 #DATA_DIR=/nfs/scratch/bishopm1/data
 #DATA_DIR = os.environ['DATA_DIR']
 DATA_DIR = '/home/m/Documents/science_codes/Kea/SF_paper/'
-NAME_PREFIX = DATA_DIR + 'FBM_VALIDATION/'
+NAME_PREFIX = DATA_DIR + 'FBM_VALIDATION/test/'
 
 for d in D:
     if d == 1:

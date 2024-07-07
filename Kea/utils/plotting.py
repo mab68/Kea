@@ -15,7 +15,7 @@ import numpy as np
 
 import matplotlib as mpl
 
-import seaborn as sns
+#import seaborn as sns
 
 
 COLOR_CYCLE_1 = [
@@ -33,7 +33,7 @@ COLOR_CYCLE_3 = [
     '#0072B2', '#D55E00', '#CC79A7',
     "#F0E442"
 ]
-COLOR_CYCLE_4 = sns.color_palette('tab10')
+#COLOR_CYCLE_4 = sns.color_palette('tab10')
 COLOR_CYCLE_5 = [
     '#0072bd', '#d95319', '#edb120',
     '#7e2f8e', '#77ac30', '#4dbeee',
@@ -81,7 +81,7 @@ def modify_rc():
     mpl.rc('text.latex', preamble=r'''\usepackage{bm}
 \usepackage{xcolor}''')
     #mpl.rcParams['text.latex.preamble']=[r"\usepackage{bm}", r"\usepackage{xcolor}"]
-    mpl.rc('font', family='serif', serif='cm10', size=8)
+    mpl.rc('font', family='serif', serif='Computer Modern', size=8)
 
 def set_logticks(ax, x=False, y=True, numticks=10):
     """set_logticks(ax)
