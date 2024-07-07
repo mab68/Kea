@@ -3,6 +3,7 @@
 
 ## DATA
 *.h5
+*.cdf
 
 # Byte-compiled / optimized / DLL files
 __pycache__/
