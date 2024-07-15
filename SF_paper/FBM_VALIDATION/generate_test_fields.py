@@ -25,7 +25,7 @@ import h5py
 
 import os
 
-D = [1, 2]#, 3]
+D = [1, 2, 3]
 N1 = [10000]
 N2 = [2048]
 N3 = [512]
@@ -61,10 +61,16 @@ for d in D:
         H = ((5./3.) - 1.) / 2.
         alph = d + 2.*H
 
-        kmin = dk = 2.*np.pi / L
-        break_k = 5. * dk
-        kmax = np.pi * n / L
-        diss_k = 0.5 * kmax
+        if d == 2:
+            kmin = dk = 2.*np.pi / L
+            break_k = 5. * dk
+            kmax = np.pi * n / L
+            diss_k = 0.2 * kmax
+        else:
+            kmin = dk = 2.*np.pi / L
+            break_k = 5. * dk
+            kmax = np.pi * n / L
+            diss_k = 0.5 * kmax
 
         # GENERATE:
         #   - A-periodic N^D
