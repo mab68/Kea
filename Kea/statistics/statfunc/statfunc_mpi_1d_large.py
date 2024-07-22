@@ -29,9 +29,13 @@ def mpi_pool_lagvecs(ar, max_lag, periodic):
     lags = np.arange(0, max_lag, 1)
     # Not running in mpi, so just compute the statfunc
     if (comm is None) or comm.Get_size() == 1:
-        return process_lags(ar, lags, periodic)
+        return lags, process_lags(ar, lags, periodic)
+    if comm.Get_rank() == 0:
+        split_lags = np.array_split(lags, comm.Get_size())
+    else:
+        split_lags = None
     # Tell each process what lags they should calculate
-    split_shifts = comm.scatter(lags, root=0)
+    split_shifts = comm.scatter(split_lags, root=0)
     print('starting %s:%s' % (comm.Get_rank(), len(split_shifts)))
     # Compute lag function
     statfunc = process_lags(ar, split_shifts, periodic)
@@ -43,4 +47,4 @@ def mpi_pool_lagvecs(ar, max_lag, periodic):
     if comm.Get_rank() == 0:
         return lags, rcv
     else:
-        return None
+        return None, None
