@@ -100,10 +100,15 @@ def bin_data(nar, ar, bin_func=np.nanmean,
 
     # Find the basis of the position array
     pos = np.where(nar == 0)
-    basis_index = [pos[i][0] for i in range(len(pos))]
-    basis_index[0] = Ellipsis
-    narbasis = nar[tuple(basis_index)]
-    nn = narbasis[pos[0][0]:]
+    if len(pos[0]) == 0:
+        basis_index = 0
+        narbasis = nar
+        nn = nar
+    else:
+        basis_index = [pos[i][0] for i in range(len(pos))]
+        basis_index[0] = Ellipsis
+        narbasis = nar[tuple(basis_index)]
+        nn = narbasis[pos[0][0]:]
 
     # Calculate the bin space
     # Assume that the array is evenly spaced (this is an assumption made with everything)
