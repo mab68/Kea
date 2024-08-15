@@ -22,37 +22,30 @@ twopi = 2.*np.pi
 from mpl_toolkits.axes_grid1 import make_axes_locatable
 
 from astropy.io import fits
-import astropy.units as u
 
-from scipy.signal import windows
-
-import time
-
-start_time = time.time()
 
 f0 = fits.open('/home/m/Documents/science_codes/Data/LMC/LMC_SED_Mass.fits')
+field1 = f0[0].data[625-512:625+512,625-512:625+512]
 
-da = (float(f0[0].header['CDELT2']) * u.deg).to(u.rad)
-dist = 50.*u.kpc
-dx = (dist * np.tan(da)).value
-print(dx*u.kpc)
-print(1024*dx*u.kpc)
+# field0 = f0[0].data[625-512:625+512,625-512:625+512]
+# field0[np.isnan(field0)] = 0.
 
 N = 1024#int(f0[0].header['NAXIS1'])
-L = dx*N
+L = float(f0[0].header['CDELT2'])*N
+
 D = 2
+
 phys_dims = (L, L)
 grid_dims = (N, N)
+
 dk = twopi/L
-
-original = f0[0].data[625-512:625+512,625-512:625+512]
-windowed = f0[0].data[625-512:625+512,625-512:625+512] * statistics_base.ndim_func(windows.tukey, (N, N), (N, 0.5))
-
-uncert = f0[1].data[625-512:625+512,625-512:625+512]
+dx = L/N
 
 lv_p = statfunc_base.get_all_lagvecs(grid_dims)
-sf_p = strfn.process_lags(windowed, windowed, lv_p, lenn=phys_dims, shape=grid_dims, orders=[2], periodic=False)[0]
+sf_p = strfn.process_lags(field1, field1, lv_p, lenn=phys_dims, shape=grid_dims, orders=[2], periodic=False)[0]
+#lvm_p = statfunc_base.get_lagvec_magnitude_array([n+1 for n in grid_dims]) * dx
+#l_p, sf2_p, w_p = statistics_base.bin_data(lvm_p, sf_p, bin_func=np.nanmean, cut_excess=True, nan_small=False,
+#                                           min_bin=dx, max_bin=L/2., bin_loc='center', log_space=True, num_bins=N//4)
 
-np.save('sf2d_win_nan_dx.npy', sf_p)
+np.save('coma_sf2d_nan.npy', sf_p)
 
-print('Compute time', time.time() - start_time)
