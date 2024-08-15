@@ -46,13 +46,21 @@ grid_dims = (N, N)
 dk = twopi/L
 
 original = f0[0].data[625-512:625+512,625-512:625+512]
-windowed = f0[0].data[625-512:625+512,625-512:625+512] * statistics_base.ndim_func(windows.tukey, (N, N), (N, 0.5))
-
 uncert = f0[1].data[625-512:625+512,625-512:625+512]
+
+from Kea.statistics import scale_filter
+zerod = original.copy()
+zerod[np.isnan(zerod)] = 0.
+zerod2 = scale_filter.gaussian_scale_greater(zerod, 4)
+zerod2[np.isnan(original)] = np.nan
+
+windowed = zerod2 * statistics_base.ndim_func(windows.tukey, (N, N), (N, 0.5))
 
 lv_p = statfunc_base.get_all_lagvecs(grid_dims)
 sf_p = strfn.process_lags(windowed, windowed, lv_p, lenn=phys_dims, shape=grid_dims, orders=[2], periodic=False)[0]
 
-np.save('sf2d_win_nan_dx.npy', sf_p)
+np.save('sf2d_PSF_4.npy', sf_p)
 
 print('Compute time', time.time() - start_time)
+
+#20183.099205732346[s]
