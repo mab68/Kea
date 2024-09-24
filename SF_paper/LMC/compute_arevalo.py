@@ -1,7 +1,7 @@
 
 import numpy as np
 
-from Kea.statistics.spectra import per_spectra, spectra_base, strfn_spectra
+from Kea.statistics.spectra import per_spectra, spectra_base, strfn_spectra, arevalo_spectra
 from Kea.statistics.statfunc import statfunc_base, strfn
 from Kea.statistics import statistics_base
 from Kea.utils import plotting, data_writer
@@ -48,20 +48,21 @@ dk = twopi/L
 original = f0[0].data[625-512:625+512,625-512:625+512]
 uncert = f0[1].data[625-512:625+512,625-512:625+512]
 
-from Kea.statistics import scale_filter
+windowed = original * statistics_base.ndim_func(windows.tukey, (N, N), (N, 0.5))
+
+mask = np.ones_like(original, dtype=int)
+mask[original == np.nan] = 0
+
 zerod = original.copy()
 zerod[np.isnan(zerod)] = 0.
-zerod2 = scale_filter.gaussian_scale_greater(zerod, 2)
-zerod2[np.isnan(original)] = np.nan
+kD, fekD = per_spectra.modal_spectrum(zerod, phys_dims=phys_dims)
+fekD = fekD * (dk/twopi)**D
+ko, feko, w = spectra_base.spectrum_integrate(kD, fekD, spec_type='omni', lenn=phys_dims)
 
-windowed = zerod2 * statistics_base.ndim_func(windows.tukey, (N, N), (N, 0.5))
+lags = arevalo_spectra.k_to_discrete_lags(ko, N, L, D)
+km, fekm = arevalo_spectra.modal_spectrum(zerod, exp1=mask, lenn=phys_dims, lags=lags, mode='wrap')
 
-lv_p = statfunc_base.get_all_lagvecs(grid_dims)
-sf_p = strfn.process_lags(windowed, windowed, lv_p, lenn=phys_dims, shape=grid_dims, orders=[2], periodic=False)[0]
-
-np.save('sf2d_PSF_2.npy', sf_p)
+np.save('a_km.npy', km)
+np.save('feka_z.npy', fekm)
 
 print('Compute time', time.time() - start_time)
-
-#17444.22633743286[s]
-#20183.099205732346[s]
