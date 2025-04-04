@@ -29,7 +29,7 @@ Kea/
             Implementation of additional turbulence statistical measures
     utils/
         Additional helpful utilities
-    
+
 example_notebooks/
     Example Jupyter notebooks for how to use the various capabilities of the package
 tests/

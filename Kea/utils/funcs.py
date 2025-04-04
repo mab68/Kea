@@ -212,7 +212,7 @@ def beta_func(shape, m0, rc, beta, pos=None):
     """beta_func(shape, m0, rc, beta, pos)
 
     Calculates a beta distribution function
-    `$n(r) = [1 + (r/rc)^2]^(-3 beta / 2)$`
+    `$n(r) = m0*[1 + (r/rc)^2]^(-3 beta / 2)$`
     
     Args:
         shape (tuple): Shape of the distribution

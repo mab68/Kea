@@ -71,6 +71,15 @@ def savefig(fig, filename):
     fig.savefig(filename + '.pdf', transparent=True, bbox_inches='tight', pad_inches=0)
     fig.savefig(filename + '.png', transparent=True, bbox_inches='tight', pad_inches=0)
 
+def pretty_axes(axx):
+    axx.yaxis.set_ticks_position('both')
+    axx.xaxis.set_ticks_position('both')
+    axx.tick_params(axis='y', direction='in')
+    axx.tick_params(axis='y', direction='in', which='minor')
+    axx.tick_params(axis='x', direction='in')
+    axx.tick_params(axis='x', direction='in', which='minor')
+    axx.grid(linestyle=':', alpha=0.3, linewidth=0.5, color='gray')
+
 def modify_rc():
     """modify_rc()
 

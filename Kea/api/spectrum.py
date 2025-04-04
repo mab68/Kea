@@ -103,7 +103,7 @@ class Spectrum(Statistic):
 
     def bias(self, other_spectrum, spec_type='modal'):
         """bias(other_spectrum, spec_type)
-        
+
         Calculates the bias of this spectrum to the other spectrum
 
         Args:
