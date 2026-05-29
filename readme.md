@@ -16,24 +16,30 @@ It provides:
 ## File structure
 ```
 Kea/
-    fitting/
-        Provides fitting routines for mean ICM profiles, correlation lengths, and spectral powerlaws.
-    noise/
-        Provides methods focused on adding (analyzing) noise to (on) the data
-    simulator/
-        Provides methods to create synthetic fluctuation fields, exposure maps and masks
-    statistics/
-        spectra/
-            Implementation for several different power spectrum estimation methods
-        statfunc/
-            Implementation of additional turbulence statistical measures
-    utils/
-        Additional helpful utilities
-    
-example_notebooks/
-    Example Jupyter notebooks for how to use the various capabilities of the package
-tests/
-    Unit tests
+    docs/
+    examples/
+    kea/
+        __init__.py
+        simulator/
+            __init__.py
+            nongaussian.py
+            gaussian.py
+        statistics/
+            __init__.py
+            spectra/
+                __init__.py
+                fourier.py
+                blackman_tukey.py
+                difference_of_gaussian.py
+                equiv_spectrum.py
+            statfunc/
+                __init__.py
+                strfn.py
+                corr.py
+        utils/
+            __init__.py
+            geometry.py
+            binning.py
 ```
 
 ## To install

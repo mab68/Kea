@@ -1,0 +1,20 @@
+.. Kea documentation master file, created by
+   sphinx-quickstart on Fri May 29 09:12:59 2026.
+   You can adapt this file completely to your liking, but it should at least
+   contain the root `toctree` directive.
+
+Kea documentation
+=================
+
+Add your content using ``reStructuredText`` syntax. See the
+`reStructuredText <https://www.sphinx-doc.org/en/master/usage/restructuredtext/index.html>`_
+documentation for details.
+
+
+.. toctree::
+   :maxdepth: 2
+   :caption: Contents:
+   kea/kea
+   kea/kea.statistics
+   kea/kea.statistics.spectra
+   kea/modules
