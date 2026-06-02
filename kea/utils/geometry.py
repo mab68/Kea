@@ -6,15 +6,8 @@ import numpy as np
 
 # The default physical scale that is automatically applied if none are given for each function call
 # It is assumed that this applies equally for each cartesian axes
+TWOPI = 2.*np.pi
 DEFAULT_PHYS_SCALE = 2.*np.pi
-
-def get_all_lagvecs(
-        shape: tuple) -> np.ndarray:
-    """get_all_lagvecs(shape)\n
-    
-    Get all the lagvectors as a list required to compute the positive lag quadrant of the ACF/SF
-    """
-    return np.transpose(np.indices(shape).reshape((-1, np.prod(shape))))
 
 def validate_shapes(*param_names: str):
     """
@@ -91,13 +84,72 @@ def default_physdims(array_param_name: str):
             
             # Only calculate defaults if phys_dims is explicitly None
             # AND we have a valid array to calculate ndim from
-            if current_phys_dims is None and isinstance(array_field, np.ndarray):
-                num_dims = array_field.ndim
-                computed_dims = tuple([DEFAULT_PHYS_SCALE for _ in range(num_dims)])
-                
+            if current_phys_dims is None:
+                # Get number of dims from another provided parameter
+                if isinstance(array_field, np.ndarray):
+                    num_dims = array_field.ndim
+                elif isinstance(array_field, tuple):
+                    num_dims = len(array_field)
+                else:
+                    raise NotImplementedError('No other valid array provided')
                 # Inject the computed tuple back into the function arguments
-                bound_args.arguments['phys_dims'] = computed_dims
-                
+                bound_args.arguments['phys_dims'] = tuple([DEFAULT_PHYS_SCALE for _ in range(num_dims)])
+
             return func(*bound_args.args, **bound_args.kwargs)
         return wrapper
     return decorator
+
+def get_all_lagvecs(
+        grid_dims: tuple) -> np.ndarray:
+    """get_all_lagvecs(grid_dims)\n
+    
+    Get all the lagvectors as a list required to compute the positive lag quadrant of the ACF/SF
+
+    Args:
+        grid_dims (tuple): Number of grid points in each dimension (N_x, N_y, ...)
+    Returns:
+        lagvecs (np.ndarray): 
+    """
+    return np.transpose(np.indices(grid_dims).reshape((-1, np.prod(grid_dims))))
+
+@default_physdims('grid_dims')
+def get_dxdk(
+        grid_dims: tuple,
+        phys_dims: Optional[tuple] = None) -> tuple[tuple, tuple]:
+    """get_dxdk(grid_dims, phys_dims)\n
+
+    Gets the (constant) discrete increments for the physical and wavenumber space
+
+    Args:
+        grid_dims (tuple): Number of grid points in each dimension (N_x, N_y, ...)
+        phys_dims (tuple): The physical length scale for each dimension (L_x, L_y, ...)
+    Returns:
+        dx (tuple): Grid spacing/sampling rate for each dimension e.g., dx = L_x/N_x, ...
+        dk (tuple): Wavenumber sampling rate for each dimension e.g., dk_x = 2*pi/L_x, ...
+    """
+    dx, dk = [], []
+    for i, N in enumerate(grid_dims):
+        dx.append(phys_dims[i]/N)
+        dk.append(TWOPI/(N*dx[i]))
+    return tuple(dx), tuple(dk)
+
+@default_physdims('grid_dims')
+def get_kvec(
+        grid_dims: tuple,
+        phys_dims: Optional[tuple] = None) -> tuple:
+    """get_kvec(grid_dims, phys_dims)\n
+
+    Gets wavenumbers for each dimension: k_x, k_y, ...
+    
+    Args:
+        grid_dims (tuple): Number of grid points in each dimension (N_x, N_y, ...)
+        phys_dims (tuple): The physical length scale for each dimension (L_x, L_y, ...)
+    Returns:
+        kvec (tuple[np.ndarray]): Wavenumber array for each dimension: k_x, k_y, ...
+    """
+    dx, _ = get_dxdk(grid_dims, phys_dims)
+    kvec = []
+    for i, N in enumerate(grid_dims):
+        kvec.append(np.fft.fftshift(np.fft.fftfreq(N)*TWOPI/dx[i]))
+    return tuple(kvec)
+

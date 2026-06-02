@@ -5,33 +5,36 @@ autocorrelation function.
 
 Functions
 ---------
-bt_spectrum\n
+- bt_spectrum
 """
 
-from typing import Optional, Union, Callable
+from ...utils.geometry import default_physdims, validate_shapes, get_dxdk, get_kvec
+
+from typing import Optional
 import numpy as np
 
-def make_symmetric_acf(
-        partial_acf: np.ndarray,
-        grid_size: int,
-        window: Optional[function] = None):
-    """make_symmetric_acf(partial_acf, grid_size, window)
-    
-    Assumes symmetry and composes the autocorrelation function for some lags
-    into the complete lag-space autocorrelation function.
+@validate_shapes('acf_full')
+@default_physdims('acf_full')
+def bt_modal_spectrum(
+        acf_full: np.ndarray,
+        phys_dims: Optional[tuple] = None) -> tuple[tuple, np.ndarray]:
+    """bt_spectrum(acf_full, phys_dims)\n
+
+    Computes the correlogram/Blackman-Tukey spectrum i.e. an estimate of a (modal) Fourier power spectrum
 
     Args:
-        partial_acf (np.ndarray): The partially computed ACF
-        grid_size (int): The number of grid points (assumed equal for each dimension)
-        window (func): If given, apply the window function
+        acf_full (np.ndarray): The complete ACF (has the same grid_dims as the field)
+            Note: we assume that the ACF is centered at N//2
+        phys_dims (tuple): The physical system size in x,y,z,... direction
     Returns:
-        acf_full (np.ndarray): The complete ACF
+        kvec (tuple): Wavenumber arrays, $\\mathbf{k}$
+        fek (np.ndarray): Modal spectrum, $E_{D}(\\mathbf{k})$
     """
-    N = grid_size
-    Q = partial_acf.reshape((N//2+1, N//2+1))
-
-
-
-
-def bt_spectrum(acf_full, L, N):
-    
+    grid_dims = acf_full.shape
+    dx, dk = get_dxdk(grid_dims, phys_dims)
+    kvec = get_kvec(grid_dims, phys_dims)
+    dX = np.prod(dx)
+    twopi = (2.*np.pi)**acf_full.ndim
+    fek = np.fft.fftshift(np.fft.fftn(np.fft.ifftshift(acf_full))).real*dX/twopi
+    fek = np.abs(fek)
+    return kvec, fek

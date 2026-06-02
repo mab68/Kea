@@ -53,6 +53,10 @@ def complete_symmetric_correlation_function(
     if longitudinal:
         D = 1
 
+    stat_metric = StatMetric.CORR
+    if biased:
+        stat_metric  = StatMetric.BIAS_CORR
+
     # Generate the appropriate lags
     N = np.min(np.shape(field))
     if max_lag is None:
@@ -62,10 +66,10 @@ def complete_symmetric_correlation_function(
     mid = N//2
     lagshape_nd = (max_lag,)*D
     lags = get_all_lagvecs(lagshape_nd)
+    print(shape_nd, lagshape_nd)
 
     ## Initialize the full N_dimensional ACF array
     Q_full = np.zeros(shape_nd)
-    print(np.shape(Q_full))
 
     ## Generate ALL orthant bitmask(s)
     ## 0 means keep input, 1 means flip input
@@ -83,34 +87,34 @@ def complete_symmetric_correlation_function(
             flipped_field = np.flip(flipped_field, axis=flip_axes)
 
         # 2. Compute the partial ACF
-        _, Q_part = partial_correlation_function(flipped_field, max_lag, longitudinal, biased)
-        print(np.shape(Q_part))
-        Q_part = Q_part[:,0].reshape(lagshape_nd)
-        print(np.shape(Q_part))
+        Q_part = process_lags(np.ascontiguousarray(flipped_field), lags, stat_metric)[:,0]
+        Q_part = Q_part.reshape(lagshape_nd)
 
         # 3. Stitch this orthant into the complete ACF
         # Strip boundary edges due to size mismatches
-        Q_part = Q_part[(slice(None, -1),)*D]
-        # Construct target slice
-        target_slices = tuple(slice(mid, None) if flip == 0 else slice(None, mid) for flip in orthant)
+        strip = tuple(slice(None, -1) if flip == 0 else slice(None) for flip in orthant)
+        # Construct target slice (how we insert Q_part into Q_full)
+        target_slices = tuple(slice(mid, None) if flip == 0 else slice(None, mid+1) for flip in orthant)
         # Construct how we read Q_part
         read_slices = tuple(slice(None) if flip == 0 else slice(None, None, -1) for flip in orthant)
         # Copy the partial into full
-        Q_full[target_slices] = Q_part[read_slices]
+        Q_full[target_slices] = Q_part[strip][read_slices]
 
         # 4. Enforce inversion symmetry by filling in the spatially opposite quadrant
         # This orthant has bits inverted
         opp_orthant = tuple(1 - flip for flip in orthant)
-        target_slices = tuple(slice(mid, None) if flip == 0 else slice(None, mid) for flip in opp_orthant)
-        read_slices = tuple(slice(None, None, -1) for _ in range(D))
+        strip = tuple(slice(None, -1) if flip == 0 else slice(None) for flip in opp_orthant)
+        target_slices = tuple(slice(mid, None) if flip == 0 else slice(None, mid+1) for flip in opp_orthant)
+        read_slices = tuple(slice(None) if flip == 0 else slice(None, None, -1) for flip in opp_orthant)
         # Copy partial into opposite quadrant of full
-        Q_full[target_slices] = Q_part[read_slices]
+        Q_full[target_slices] = Q_part[strip][read_slices]
 
-    return lags, np.fft.ifftshift(Q_full)
+    return lags, Q_full
 
 @validate_shapes('field')
 def partial_correlation_function(
         field: np.ndarray,
+        lags: Optional[np.ndarray] = None,
         max_lag: Optional[int] = None,
         longitudinal: Optional[bool] = False,
         biased: Optional[bool] = False) -> tuple[np.ndarray, np.ndarray]:
@@ -135,7 +139,7 @@ def partial_correlation_function(
     # Generate the appropriate lags
     if max_lag is None:
         max_lag = np.min(np.shape(field))//2
-    lagvec_shape = tuple([max_lag for _ in range(D)])
+    lagvec_shape = (max_lag,)*D
     lags = get_all_lagvecs(lagvec_shape)
 
     # Calculate SF

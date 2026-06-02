@@ -23,7 +23,7 @@ def _calc_stat(
     s2_start: np.ndarray,
     overlap_shape: np.ndarray,
     stat_metric: StatMetric,
-    powers: tuple):
+    powers: tuple) -> np.ndarray:
     """
     Computes the statistic for a given lag across arbitrary dimensions using flat index mapping.
     

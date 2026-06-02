@@ -5,17 +5,17 @@ This is essentially accomplishing the periodogram method via the FFT.
 
 Functions
 ---------
-fourier_spectrum\n
+- fourier_spectrum
 """
 
-from ...utils.geometry import default_physdims, validate_shapes
+from ...utils.geometry import default_physdims, validate_shapes, get_dxdk, get_kvec
 
 from typing import Optional
 import numpy as np
 
 @validate_shapes('field_a', 'field_b')
 @default_physdims('field_a')
-def fourier_spectrum(
+def fourier_modal_spectrum(
         field_a: np.ndarray,
         field_b: Optional[np.ndarray] = None,
         phys_dims: Optional[tuple] = None) -> tuple[tuple, np.ndarray]:
@@ -32,21 +32,19 @@ def fourier_spectrum(
         kvec (tuple): Wavenumber arrays, $\\mathbf{k}$
         fek (np.ndarray): Modal spectrum, $E_{D}(\\mathbf{k})$
     """
-    kvec = []
-    dx = []
-    dk = []
-    for i, N in enumerate(field_a.shape):
-        dx.append(phys_dims[i]/N)
-        # Note: this is really dk = 1/Ndx
-        dk.append(1./(N*dx[i]))
-        kvec.append(np.fft.fftshift(np.fft.fftfreq(N))*2.*np.pi/dx[i])
-    far1 = np.prod(dx)*np.fft.fftshift(np.fft.fftn(field_a))
+    grid_dims = field_a.shape
+    dx, dk = get_dxdk(grid_dims, phys_dims)
+    dX, dK = np.prod(dk), np.prod(dx)
+    # NOTE: this actually gives dK = np.prod(phys_dims)
+    dK = dK/(2.*np.pi)**field_a.ndim
+    kvec = get_kvec(grid_dims, phys_dims)
+    far1 = dX*np.fft.fftshift(np.fft.fftn(field_a))
     if field_b is not None:
         # Compute the cross-spectrum
-        far2 = np.prod(dx)*np.fft.fftshift(np.fft.fftn(field_b))
-        fek = np.prod(dk)*far1*np.conjugate(far2)
+        far2 = dX*np.fft.fftshift(np.fft.fftn(field_b))
+        fek = dK*far1*np.conjugate(far2)
         fek = fek.real
     else:
         # Compute the auto-spectrum
-        fek = np.prod(dk)*np.abs(far1)**2
+        fek = dK*np.abs(far1)**2
     return tuple(kvec), fek
