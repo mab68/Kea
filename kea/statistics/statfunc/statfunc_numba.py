@@ -3,6 +3,10 @@ statfunc_numba.py
 
 The implementation of the statfunc calculations using numba for increased processing speed.
 This implementation does not provide a periodic calculation.
+
+Functions
+---------
+- process_lags
 """
 
 from typing import Optional
@@ -26,11 +30,6 @@ def _calc_stat(
     powers: tuple) -> np.ndarray:
     """
     Computes the statistic for a given lag across arbitrary dimensions using flat index mapping.
-    
-    shape: The original shape of the field
-    s1_start: Array of start indices for slice 1
-    s2_start: Array of start indices for slice 2
-    overlap_shape: The shape of the overlapping region
     """
     num_powers = len(powers)
     totals = np.zeros(num_powers, dtype=np.float64)

@@ -5,10 +5,10 @@ This is essentially accomplishing the periodogram method via the FFT.
 
 Functions
 ---------
-- fourier_spectrum
+- fourier_modal_spectrum
 """
 
-from ...utils.geometry import default_physdims, validate_shapes, get_dxdk, get_kvec
+from ...utils.geometry import default_physdims, validate_shapes, get_dxdk, get_kvec, TWOPI
 
 from typing import Optional
 import numpy as np
@@ -18,7 +18,7 @@ import numpy as np
 def fourier_modal_spectrum(
         field_a: np.ndarray,
         field_b: Optional[np.ndarray] = None,
-        phys_dims: Optional[tuple] = None) -> tuple[tuple, np.ndarray]:
+        phys_dims: Optional[tuple[float,...]] = None) -> tuple[tuple[np.ndarray,...], np.ndarray]:
     """fourier_spectrum(field_a, field_b, phys_dims)\n
 
     Computes the N-dimensional (modal) Fourier power spectrum via FFT.
@@ -29,22 +29,22 @@ def fourier_modal_spectrum(
         field_b (np.ndarray): Array if computing the cross-spectrum
         phys_dims (tuple): The physical system size in x,y,z,... direction
     Returns:
-        kvec (tuple): Wavenumber arrays, $\\mathbf{k}$
-        fek (np.ndarray): Modal spectrum, $E_{D}(\\mathbf{k})$
+        kvec (tuple): Wavenumber arrays
+        fek (np.ndarray): Modal spectrum
     """
     grid_dims = field_a.shape
-    dx, dk = get_dxdk(grid_dims, phys_dims)
-    dX, dK = np.prod(dk), np.prod(dx)
-    # NOTE: this actually gives dK = np.prod(phys_dims)
-    dK = dK/(2.*np.pi)**field_a.ndim
+    dx, _ = get_dxdk(grid_dims, phys_dims)
+    dX = np.prod(dx)
+    L = np.prod(phys_dims)
+
     kvec = get_kvec(grid_dims, phys_dims)
     far1 = dX*np.fft.fftshift(np.fft.fftn(field_a))
     if field_b is not None:
         # Compute the cross-spectrum
         far2 = dX*np.fft.fftshift(np.fft.fftn(field_b))
-        fek = dK*far1*np.conjugate(far2)
+        fek = far1*np.conjugate(far2)
         fek = fek.real
     else:
         # Compute the auto-spectrum
-        fek = dK*np.abs(far1)**2
-    return tuple(kvec), fek
+        fek = np.abs(far1)**2
+    return tuple(kvec), fek/L

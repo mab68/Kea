@@ -1,8 +1,23 @@
+"""
+geometry.py
+
+Provides common methods associated with the geometry e.g., grid size calculation etc.
+
+Functions
+---------
+- validate_shapes
+- default_physdims
+- volume_hypersphere
+- get_all_lagvecs
+- get_dxdk
+- get_kvec
+"""
 
 from typing import Optional
 from functools import wraps
 import inspect
 import numpy as np
+from scipy.special import gamma
 
 # The default physical scale that is automatically applied if none are given for each function call
 # It is assumed that this applies equally for each cartesian axes
@@ -67,7 +82,7 @@ def validate_shapes(*param_names: str):
 
 def default_physdims(array_param_name: str):
     """
-    Decorator to automatically initialize physics dimensions to 2*pi if they are not initialized
+    Decorator to automatically initialize physics dimensions to `DEFAULT_PHYS_SCALE` if they are not initialized
     multiplied by the number of dimensions of a target array.
     """
     def decorator(func):
@@ -99,8 +114,68 @@ def default_physdims(array_param_name: str):
         return wrapper
     return decorator
 
+def check_square_dims():
+    """
+    Decorator to automatically check if `grid_dims` and `phys_dims` are equal in dimension
+    and have the same values in each dimension (respectively)
+    """
+    def decorator(func):
+        sig = inspect.signature(func)
+
+        @wraps(func)
+        def wrapper(*args, **kwargs):
+            bound_args = sig.bind(*args, **kwargs)
+            bound_args.apply_defaults()
+            
+            # Extract the array and current phys_dims
+            grid_dims = bound_args.arguments.get('grid_dims')
+            phys_dims = bound_args.arguments.get('phys_dims')
+
+            if len(grid_dims) != len(phys_dims):
+                raise ValueError('Provided dimensions not consistent')
+            dimension = len(grid_dims)
+            if grid_dims != (grid_dims[0],) * dimension:
+                raise ValueError('Grid dimensions are not square')
+            if phys_dims != (phys_dims[0],) * dimension:
+                raise ValueError('Physical dimensions are not square')
+
+            return func(*bound_args.args, **bound_args.kwargs)
+        return wrapper
+    return decorator
+
+def volume_hypersphere(
+        radius: float,
+        dimension: int | float) -> float:
+    """volume_hypersphere(radius, dimension)\n
+    
+    Calculates the volume of a $D$-dimensional hypersphere with radius $r$.
+
+    Args:
+        radius (float): Radius of the hypersphere
+        dimension (int): (Euclidean) dimension of the hypersphere
+    Returns:
+        volume (float): Volume of the hypersphere
+    """
+    D = float(dimension)
+    return (np.pi**(D/2.) / gamma(D/2. + 1.)) * radius**D
+
+def get_mesh(
+        axes_vec: tuple[np.ndarray,...]) -> np.ndarray:
+    """get_mesh(axes_vec)\n
+
+    Computes the n-dimensional (magnitude) mesh from a list of grid axes
+    
+    Args:
+        axes_vec (tuple): axes associated with each dimension
+    Returns:
+        norm_mesh (np.ndarray): Magnitude mesh
+    """
+    mesh = np.meshgrid(*axes_vec, indexing='xy')
+    norm_mesh = np.linalg.norm(mesh, axis=0)
+    return norm_mesh
+
 def get_all_lagvecs(
-        grid_dims: tuple) -> np.ndarray:
+        grid_dims: tuple[float,...]) -> np.ndarray:
     """get_all_lagvecs(grid_dims)\n
     
     Get all the lagvectors as a list required to compute the positive lag quadrant of the ACF/SF
@@ -108,14 +183,14 @@ def get_all_lagvecs(
     Args:
         grid_dims (tuple): Number of grid points in each dimension (N_x, N_y, ...)
     Returns:
-        lagvecs (np.ndarray): 
+        lagvecs (np.ndarray): List of vector indices that represent lag-shifts covering the `grid_dims` domain
     """
     return np.transpose(np.indices(grid_dims).reshape((-1, np.prod(grid_dims))))
 
 @default_physdims('grid_dims')
 def get_dxdk(
-        grid_dims: tuple,
-        phys_dims: Optional[tuple] = None) -> tuple[tuple, tuple]:
+        grid_dims: tuple[float,...],
+        phys_dims: Optional[tuple[float,...]] = None) -> tuple[tuple[float,...], tuple[float,...]]:
     """get_dxdk(grid_dims, phys_dims)\n
 
     Gets the (constant) discrete increments for the physical and wavenumber space
@@ -135,8 +210,8 @@ def get_dxdk(
 
 @default_physdims('grid_dims')
 def get_kvec(
-        grid_dims: tuple,
-        phys_dims: Optional[tuple] = None) -> tuple:
+        grid_dims: tuple[float,...],
+        phys_dims: Optional[tuple[float,...]] = None) -> tuple[np.ndarray,...]:
     """get_kvec(grid_dims, phys_dims)\n
 
     Gets wavenumbers for each dimension: k_x, k_y, ...

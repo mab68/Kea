@@ -20,18 +20,20 @@ def statfunc_strfn(
 @validate_shapes('field')
 def structure_function(
         field: np.ndarray,
+        discrete_lags: Optional[np.ndarray] = None,
         max_lag: Optional[int] = None,
         longitudinal: Optional[bool] = False,
         orders: Optional[tuple] = (2,)) -> tuple[np.ndarray, np.ndarray]:
-    """structure_function(field, max_lag, longitudinal, orders)
+    """structure_function(field, max_lag, longitudinal, orders)\n
 
     Args:
         field (np.ndarray): Array to calculate the (auto)-structure function
+        lags (np.ndarray): The lags (indices) to evaluate the ACF at
         max_lag (int): Maximum lag (as grid index) to go to
         longitudinal (bool): Whether to calculate along 1D
         orders (tuple): List of SF orders to calculate
     Returns:
-        lags (np.ndarray): The array of lags
+        discrete_lags (np.ndarray): The array of (discrete) lags
         sf (np.ndarray): Computed SFs. [Note, this might need to be reshaped]
     """
     # If looking for the longitudinal/transverse SF, then just iterate over "1D" lags
@@ -40,11 +42,12 @@ def structure_function(
         D = 1
 
     # Generate the appropriate lags
-    if max_lag is None:
-        max_lag = np.min(np.shape(field))//2
-    lagvec_shape = tuple([max_lag for _ in range(D)])
-    lags = get_all_lagvecs(lagvec_shape)
+    if discrete_lags is None:
+        if max_lag is None:
+            max_lag = np.min(np.shape(field))//2
+        lagvec_shape = (max_lag,)*D
+        discrete_lags = get_all_lagvecs(lagvec_shape)
 
     # Calculate SF
-    sf = process_lags(field, lags, StatMetric.STRFN, np.array(orders))
-    return lags, sf
+    sf = process_lags(field, discrete_lags, StatMetric.STRFN, np.array(orders))
+    return discrete_lags, sf

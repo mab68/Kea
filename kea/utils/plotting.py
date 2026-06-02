@@ -4,10 +4,10 @@ Provides useful style functions for matplotlib.
 
 Functions
 ---------
-modify_rc\n
-pretty_axes\n
-set_logticks\n
-make_ax_step\n
+- modify_rc\n
+- pretty_axes\n
+- set_logticks\n
+- make_ax_step\n
 """
 
 import numpy as np

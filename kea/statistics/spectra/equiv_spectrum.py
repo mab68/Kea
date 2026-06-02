@@ -9,7 +9,7 @@ Functions
 - filter_bad
 - sf_to_spectrum
 - debias
-- esf_spectrum
+- esf_integrated_spectrum
 """
 
 from ...utils.fitting import log_log_interpolate, get_powerlaw
@@ -110,32 +110,32 @@ def debias(
     return bias_factor
 
 def esf_integrated_spectrum(
-        ell: np.ndarray,
-        sf2: np.ndarray,
-        D: int,
-        b: Optional[float]=None,
-        ko: Optional[np.ndarray]=None) -> tuple[np.ndarray, np.ndarray, np.ndarray]:
-    """esf_spectrum(ell, sf2, D, b, ko)\n
+        physical_lags: np.ndarray,
+        structure_function: np.ndarray,
+        dimension: int,
+        b_factor: Optional[float]=None,
+        fourier_wavenumbers: Optional[np.ndarray]=None) -> tuple[np.ndarray, np.ndarray, np.ndarray]:
+    """esf_spectrum(physical_lags, structure_function, dimension, b_factor, fourier_wavenumbers)\n
 
     Calculates the equivalent spectrum i.e. an estimate of the (integrated) Fourier power spectrum
 
     Args:
-        ell (np.ndarray): Lags
-        sf2 (np.ndarray): Angle-averaged second-order structure function
-        D (int): Number of dimensions
-        b (float/None): The wavenumber bias factor (little-b). If None, uses $b^{est}$.
-        ko (np.ndarray): FFT based wavenumbers to interpolate the equivalent spectrum onto
+        physical_lags (np.ndarray): Lags
+        structure_function (np.ndarray): Angle-averaged second-order structure function
+        dimension (int): Number of dimensions
+        b_factor (float/None): The wavenumber bias factor (little-b). If None, uses $b^{est}$.
+        fourier_wavenumbers (np.ndarray): FFT based wavenumbers to interpolate the equivalent spectrum onto
     Returns:
         ke (np.ndarray): Equivalent wavenumbers
         BfekS (np.ndarray): Uncorrected equivalent spectrum
         fekS (np.ndarray): Debiased equivalent spectrum
     """
-    if b is None:
-        if D == 1:
-            b = 1.
+    if b_factor is None:
+        if dimension == 1:
+            b_factor = 1.
         else:
-            b = np.sqrt(2.*float(D) - 2.)
-    ke, BfekS = sf_to_spectrum(ell, sf2, b, ko)
+            b_factor = np.sqrt(2.*float(dimension) - 2.)
+    ke, BfekS = sf_to_spectrum(physical_lags, structure_function, b_factor, fourier_wavenumbers)
     a_fekS = get_powerlaw(ke, BfekS)
-    B = debias(a_fekS, b, float(D))
+    B = debias(a_fekS, b_factor, float(dimension))
     return ke, BfekS, BfekS/B

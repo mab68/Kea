@@ -13,13 +13,13 @@ import itertools
 
 def statfunc_biased_acf(
         field_a: np.ndarray,
-        field_b: np.ndarray):
+        field_b: np.ndarray) -> np.floating:
     assert np.shape(field_a) == np.shape(field_b), 'Provided fields have different shapes'
     return np.nansum(field_a * field_b)/np.prod(np.shape(field_a))
 
 def statfunc_acf(
         field_a: np.ndarray,
-        field_b: np.ndarray):
+        field_b: np.ndarray) -> np.floating:
     assert np.shape(field_a) == np.shape(field_b), 'Provided fields have different shapes'
     return np.nanmean(field_a * field_b)
 
@@ -66,7 +66,6 @@ def complete_symmetric_correlation_function(
     mid = N//2
     lagshape_nd = (max_lag,)*D
     lags = get_all_lagvecs(lagshape_nd)
-    print(shape_nd, lagshape_nd)
 
     ## Initialize the full N_dimensional ACF array
     Q_full = np.zeros(shape_nd)
@@ -124,7 +123,8 @@ def partial_correlation_function(
 
     Args:
         field (np.ndarray): Array to calculate the (auto)-structure function
-        max_lag (int): Maximum lag (as grid index) to go to
+        lags (np.ndarray): The lags (indices) to evaluate the ACF at
+        max_lag (int): Maximum lag (as grid index) to go to (if lags not provided)
         longitudinal (bool): Whether to calculate along 1D
         biased (bool): If true, apply biased normalization
     Returns:
@@ -137,14 +137,15 @@ def partial_correlation_function(
         D = 1
 
     # Generate the appropriate lags
-    if max_lag is None:
-        max_lag = np.min(np.shape(field))//2
-    lagvec_shape = (max_lag,)*D
-    lags = get_all_lagvecs(lagvec_shape)
+    if lags is None:
+        if max_lag is None:
+            max_lag = np.min(np.shape(field))//2
+        lagvec_shape = (max_lag,)*D
+        lags = get_all_lagvecs(lagvec_shape)
 
     # Calculate SF
     stat_metric = StatMetric.CORR
     if biased:
         stat_metric = StatMetric.BIAS_CORR
-    acf = process_lags(field, lags, stat_metric)
+    acf = process_lags(np.ascontiguousarray(field), lags, stat_metric)
     return lags, acf
