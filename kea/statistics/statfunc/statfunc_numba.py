@@ -9,17 +9,13 @@ Functions
 - process_lags
 """
 
+from .statfunc_base import StatMetric
+
 from typing import Optional
-from enum import IntEnum
 import numpy as np
 from numba import njit, prange
 
-class StatMetric(IntEnum):
-    CORR = 1
-    BIAS_CORR = 2
-    STRFN = 3
-
-@njit
+@njit(cache=True)
 def _calc_stat(
     field: np.ndarray,
     shape: np.ndarray,

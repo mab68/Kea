@@ -4,7 +4,8 @@ strfn.py
 Calculates the autocorrelation function for arbitrary dimension $D$.
 """
 
-from .statfunc_numba import process_lags, StatMetric
+from .statfunc_base import StatMetric
+from .statfunc_cupy import process_lags
 from ...utils.geometry import validate_shapes, get_all_lagvecs
 
 from typing import Optional

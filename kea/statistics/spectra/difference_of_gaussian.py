@@ -11,72 +11,44 @@ from ...utils.geometry import validate_shapes, default_physdims, get_dxdk, check
 from typing import Optional
 
 import numpy as np
-from numba import njit, prange
+import cupy as cp
+import cupyx.scipy.ndimage as ndimage
+
+from astropy.convolution import convolve, Gaussian1DKernel
 
 
 DEFAULT_SCALE_FACTOR = np.sqrt(2.)
 
-@njit(cache=True)
-def gaussian_kernel1d(discrete_scale: np.floating) -> np.ndarray:
-    radius = int(10.*discrete_scale + 0.5)
-    x = np.arange(-radius, radius+1, dtype=np.float64)
-    kernel = np.exp(-0.5 * (x/discrete_scale)**2)
-    return kernel / np.sum(kernel)
-
-@njit(cache=True)
-def gaussian_filter(field: np.ndarray, scale: np.floating):
-    
-    for axis in range(ndim):
-        
-
-
-@njit(cache=True)
 def _calc_stat(
-        field: np.ndarray,
-        discrete_scale: np.floating,
-        exposure_field: Optional[np.ndarray] = None) -> np.floating:
-
-    dimension = field.ndim
-
-    xi = 1e-3
-    s1 = discrete_scale / np.sqrt(1. + xi)
-    s2 = discrete_scale * np.sqrt(1. + xi)
-
-    if exposure_field is None:
-        ## TODO: This can be optimized
-        exposure_field = np.ones_like(field)
-
+        field: cp.ndarray,
+        s1: float,
+        s2: float,
+        exposure: cp.ndarray) -> np.floating:
     # Convolve the image with the Gaussians of scale `s1`
-    img_conv_gauss = gaussian_filter(field, s1)
-    exp_conv_gauss = gaussian_filter(exposure_field, s1)
-    t1 = img_conv_gauss/exp_conv_gauss
-    # Convolve the image with Gaussian of scale `s2`
-    img_conv_gauss = gaussian_filter(field, s2)
-    exp_conv_gauss = gaussian_filter(exposure_field, s2)
-    t2 = img_conv_gauss/exp_conv_gauss
+    filtered_field = ndimage.gaussian_filter(field, s1, mode='constant', cval=0., truncate=10.)
+    filtered_exp = ndimage.gaussian_filter(exposure, s1, mode='constant', cval=0., truncate=10.)
+    t1 = filtered_field/filtered_exp
+    # Convolve the image with the Gaussians of scale `s2`
+    filtered_field = ndimage.gaussian_filter(field, s2, mode='constant', cval=0., truncate=10.)
+    filtered_exp = ndimage.gaussian_filter(exposure, s2, mode='constant', cval=0., truncate=10.)
+    t2 = filtered_field/filtered_exp
 
     # Calculate the variance of the difference at that scale
-    mask = exposure_field > 0.
-    masked_diff = exposure_field * mask * (t1 - t2)
-    variance = np.nansum(masked_diff*masked_diff)
-
-    # Calculate the variance of the Gaussian filter(s)
-    gauss1, gauss2 = gaussian_kernel1d(s1), gaussian_kernel1d(s2)
-    gaussian_variance = np.nansum(gauss1**2)**dimension - 2.*np.nansum(gauss1*gauss2)**dimension + np.nansum(gauss2**2)**dimension
+    # mask = exposure > 0.
+    masked_diff = exposure * (t1 - t2)
+    variance = cp.nansum(masked_diff*masked_diff)
 
     # Generate mask compensation factor (fraction of masked field)
-    m_comp = np.prod(np.shape(mask)) / np.nansum(mask)
+    m_comp = exposure.size / cp.nansum(exposure)
 
     # Normalize by fraction of sky and gaussian variance
-    return m_comp * variance / gaussian_variance
+    return m_comp * variance
 
-@njit(parallel=True)
 def process_scales(
         field: np.ndarray,
         discrete_scales: np.ndarray,
         exposure_field: Optional[np.ndarray] = None) -> np.ndarray:
     """process_scales(field, exposure_field, scales)\n
-
 
     Args:
         field (np.ndarray): The array to compute the scale-statfunc of
@@ -85,10 +57,37 @@ def process_scales(
     Return:
         out (np.ndarray): Output array
     """
+    dimension = field.ndim
+    field_gpu = cp.asarray(field, dtype=cp.float64)
+
+    if exposure_field is not None:
+        exposure_gpu = cp.asarray(exposure_field, dtype=cp.float64)
+    else:
+        exposure_gpu = cp.ones_like(field_gpu)
+
+    field_gpu = cp.nan_to_num(field_gpu, nan=0.)
     out = np.zeros(len(discrete_scales), dtype=np.float64)
-    for i in prange(len(discrete_scales)):
-        s = discrete_scales[i]
-        out[i] = _calc_stat(np.ascontiguousarray(field), s, np.ascontiguousarray(exposure_field))
+
+    for i in range(len(discrete_scales)):
+        s = float(discrete_scales[i])
+
+        xi = 1e-3
+        s1 = float(s / np.sqrt(1. + xi))
+        s2 = float(s * np.sqrt(1. + xi))
+
+        out[i] = _calc_stat(field_gpu, s1, s2, exposure_gpu)
+
+        # Calculate the variance of the Gaussian filter(s)
+        # Use separability to make this step faster
+        size = np.nanmax([2*int(10.*s1 + 0.5) + 1, 2*int(10.*s2 + 0.5) + 1])
+        gauss1, gauss2 = Gaussian1DKernel(s1, x_size=size).array, Gaussian1DKernel(s2, x_size=size).array
+        gaussian_variance = (
+            np.nansum(gauss1**2)**dimension
+            - 2.*np.nansum(gauss1*gauss2)**dimension
+            + np.nansum(gauss2**2)**dimension)
+        # Normalize by the filter variance
+        out[i] = out[i] / gaussian_variance
+
     return out
 
 @validate_shapes('field', 'exposure_field')
@@ -103,7 +102,10 @@ def dog_averaged_spectrum(
     
     Args:
         field (np.ndarray): Array to calculate the difference-of-Gaussian spectrum
+            this array CAN have NaN values.
         exposure_field (np.ndarray): An additional mask/exposure map
+            0 represents invalid data
+            otherwise, valid/partially valid data
         b_factor (float): If set, use a different scale-wavenumber conversion factor
         scales (np.ndarray): (discrete) Gaussian scales (standard deviation)
         phys_dims (tuple): The physical system size in x,y,z,... direction
@@ -119,15 +121,14 @@ def dog_averaged_spectrum(
         b_factor = DEFAULT_SCALE_FACTOR
 
     dx, dk = get_dxdk(grid_dims, phys_dims)
-    dx, dk = dx[0], dk[0]
 
     # Default to using the Fourier wavenumber-spaced scales
     if discrete_scales is None:
         wavenumbers = get_kvec(grid_dims, phys_dims)[0]
-        discrete_scales = wavenumber_to_discrete_scale(wavenumbers, grid_dims, phys_dims, b_factor)
+        discrete_scales = wavenumber_to_discrete_scale(wavenumbers[wavenumbers>0.], grid_dims, phys_dims, b_factor)
 
-    dogs = process_scales(field, discrete_scales, exposure_field)
-    equiv_k = b_factor / (discrete_scales*dx)
+    dogs = process_scales(field, discrete_scales, exposure_field) * np.prod(dx)**2 / np.prod(phys_dims)
+    equiv_k = b_factor / (discrete_scales*dx[0])
     return equiv_k, dogs
 
 @default_physdims('grid_dims')
