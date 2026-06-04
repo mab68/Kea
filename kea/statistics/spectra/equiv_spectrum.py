@@ -1,18 +1,9 @@
 """
-equiv_spectrum.py
-
 Implements the equivalent spectrum (ESF) calculated directly using the structure function following the pocedure from:
 - Mark A. Bishop, Sean Oughton, Tulasi N. Parashar, Yvette C. Perrott; Direct power spectral density estimation from structure functions without Fourier transforms. Physics of Fluids 1 February 2026; 38 (2): 025107. https://doi.org/10.1063/5.0310561
-
-Functions
----------
-- filter_bad
-- sf_to_spectrum
-- debias
-- esf_integrated_spectrum
 """
 
-from ...utils.fitting import log_log_interpolate, get_powerlaw
+from kea.utils.fitting import log_log_interpolate, get_powerlaw
 
 from typing import Optional
 
@@ -31,9 +22,9 @@ def filter_bad(
         kk (np.ndarray): wavenumbers to clean
         fek (np.ndarray): Spectrum to clean
         ko (np.ndarray): 'true' wavenumbers
+
     Returns:
-        kk (np.ndarray): Cleaned wavenumbers
-        fek (np.ndarray): Cleaned spectrum
+        (np.ndarray, np.ndarray): Cleaned wavenumbers and spectrum
     """
     # If we provide a 'ko', make sure we don't extend outside of its range
     if ko is not None:
@@ -72,9 +63,9 @@ def sf_to_spectrum(
         sf2 (np.ndarray): Angle-averaged second order structure function
         b (float): Wavenumber bias factor
         ko (np.ndarray/None): Discrete wavenumbers for FFT
+
     Returns:
-        ke (np.ndarray): Equivalent wavenumbers
-        BfekS (np.ndarray): Uncorrected equivalent spectrum
+        (np.ndarray, np.ndarray): Equivalent wavenumbers and uncorrected equivalent spectrum
     """
     dSdell = np.gradient(sf2, ell)
     BfekS = (1./2.) * ell**2 * dSdell / b
@@ -95,8 +86,9 @@ def debias(
         est_alpha (np.ndarray): Local power law estimate (betas)
         b (float): Wavenumber bias factor
         D (float): Number of dimensions
+
     Returns:
-        Bpow (np.narray): Local power law based bias/correction factor
+        np.ndarray: Local power law based bias/correction factor
     """
     sp_beta = sp.symbols('beta', positive=True, real=True)
     sp_D = sp.symbols('D', positive=True, real=True)
@@ -125,10 +117,9 @@ def esf_integrated_spectrum(
         dimension (int): Number of dimensions
         b_factor (float/None): The wavenumber bias factor (little-b). If None, uses $b^{est}$.
         fourier_wavenumbers (np.ndarray): FFT based wavenumbers to interpolate the equivalent spectrum onto
+
     Returns:
-        ke (np.ndarray): Equivalent wavenumbers
-        BfekS (np.ndarray): Uncorrected equivalent spectrum
-        fekS (np.ndarray): Debiased equivalent spectrum
+        (np.ndarray, np.ndarray, np.ndarray): Equivalent wavenumbers, uncorrected equivalent spectrum, and debiased equivalent spectrum
     """
     if b_factor is None:
         if dimension == 1:

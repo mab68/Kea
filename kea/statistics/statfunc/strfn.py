@@ -1,22 +1,12 @@
 """
-strfn.py
-
 Calculates the autocorrelation function for arbitrary dimension $D$.
 """
 
-from .statfunc_base import StatMetric
-from .statfunc_cupy import process_lags
-from ...utils.geometry import validate_shapes, get_all_lagvecs
+from kea.statistics.statfunc.statfunc_base import StatMetric, process_lags
+from kea.utils.geometry import validate_shapes, get_all_lagvecs
 
 from typing import Optional
 import numpy as np
-
-def statfunc_strfn(
-        field_a: np.ndarray,
-        field_b: np.ndarray,
-        p: int = 2) -> np.floating:
-    assert np.shape(field_a) == np.shape(field_b), 'Provided fields have different shapes'
-    return np.nanmean(np.abs(field_a - field_b)**p)
 
 @validate_shapes('field')
 def structure_function(
@@ -33,9 +23,9 @@ def structure_function(
         max_lag (int): Maximum lag (as grid index) to go to
         longitudinal (bool): Whether to calculate along 1D
         orders (tuple): List of SF orders to calculate
+
     Returns:
-        discrete_lags (np.ndarray): The array of (discrete) lags
-        sf (np.ndarray): Computed SFs. [Note, this might need to be reshaped]
+        (np.ndarray, np.ndarray): The array of (discrete) lags and computed SFs
     """
     # If looking for the longitudinal/transverse SF, then just iterate over "1D" lags
     D = field.ndim
@@ -50,5 +40,5 @@ def structure_function(
         discrete_lags = get_all_lagvecs(lagvec_shape)
 
     # Calculate SF
-    sf = process_lags(field, discrete_lags, StatMetric.STRFN, np.array(orders))
+    discrete_lags, sf = process_lags(field, discrete_lags, StatMetric.STRFN, np.array(orders))
     return discrete_lags, sf

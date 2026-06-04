@@ -1,14 +1,9 @@
 """
-fourier.py
 Implements power spectra calculations using direct FFT conversion and then squaring the absolute value.
 This is essentially accomplishing the periodogram method via the FFT.
-
-Functions
----------
-- fourier_modal_spectrum
 """
 
-from ...utils.geometry import default_physdims, validate_shapes, get_dxdk, get_kvec, TWOPI
+from kea.utils.geometry import default_physdims, validate_shapes, get_dxdk, get_kvec
 
 from typing import Optional
 import numpy as np
@@ -28,10 +23,11 @@ def fourier_modal_spectrum(
         field_a (np.ndarray): Array to compute the spectrum of
         field_b (np.ndarray): Array if computing the cross-spectrum
         phys_dims (tuple): The physical system size in x,y,z,... direction
+
     Returns:
-        kvec (tuple): Wavenumber arrays
-        fek (np.ndarray): Modal spectrum
+        (tuple, np.ndarray): wavenumber arrays and modal spectrum
     """
+    print(phys_dims)
     grid_dims = field_a.shape
     dx, _ = get_dxdk(grid_dims, phys_dims)
     dX = np.prod(dx)

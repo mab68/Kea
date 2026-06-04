@@ -1,15 +1,9 @@
 """
-blackman_tukey.py
-
 Implements power spectra calculations using the Blackman-Tukey method i.e., the Fourier transform of the
 autocorrelation function.
-
-Functions
----------
-- bt_modal_spectrum
 """
 
-from ...utils.geometry import default_physdims, validate_shapes, get_dxdk, get_kvec, TWOPI
+from kea.utils.geometry import default_physdims, validate_shapes, get_dxdk, get_kvec
 
 from typing import Optional
 import numpy as np
@@ -27,9 +21,9 @@ def bt_modal_spectrum(
         acf_full (np.ndarray): The complete ACF (has the same grid_dims as the field)
             Note: we assume that the ACF is centered at N//2
         phys_dims (tuple): The physical system size in x,y,z,... direction
+
     Returns:
-        kvec (tuple): Wavenumber arrays, $\\mathbf{k}$
-        fek (np.ndarray): Modal spectrum, $E_{D}(\\mathbf{k})$
+        (tuple, np.ndarray): Wavenumber arrays and modal spectrum
     """
     grid_dims = acf_full.shape
     dx, _ = get_dxdk(grid_dims, phys_dims)

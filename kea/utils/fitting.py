@@ -1,10 +1,8 @@
 """
-fitting.py
-
 Provides various utility routines to fit slopes etc.
 """
 
-from .binning import bin_data
+from kea.utils.binning import bin_data
 
 from typing import Optional
 

@@ -1,17 +1,8 @@
 """
-binning.py
-
 Provides common methods for binning
-
-Functions
----------
-- ndim_func
-- bin_data
-- get_bins
-- hypersphere_binshell
 """
 
-from .geometry import volume_hypersphere
+from kea.utils.geometry import volume_hypersphere
 
 from typing import Optional, Callable
 
@@ -24,13 +15,13 @@ def ndim_func(
         func_args: Optional[tuple]=()):
     """ndim_func(wfunc, shape, func_args)\n
 
-    Generates a N-Dimensional function by taking the outer product
-        of the 1-dimensional `wfunc` for as many dimensions in `shape`
+    Generates a N-Dimensional function by taking the outer product of the 1-dimensional `wfunc` for as many dimensions in `shape`
     
     Args:
         wfunc (func): Generation function in 1D
         shape (tuple): The shape of the n-dimensional space
         func_args (tuple): Arguments to pass into `wfunc`
+
     Returns:
         np.ndarray: N-dimensional function    
     """
@@ -64,22 +55,20 @@ def bin_data(
         nan_small (bool): If true, set the binned function to nan for when the number of points is small
         min_bin (float): Smallest bin value, if None, then automatically pick
         max_bin (float): Largest bin value.
-            if None, then get the largest of `pos_array`
-            if `basis`, then choose the largest in the basis
+            - if None, then get the largest of `pos_array`
+            - if `basis`, then choose the largest in the basis
         bin_loc (str):
-            center: Places the bin in the center of the bin range.
-            true_center: Places the bins in the center of the available data,
-                this fixes problems close to 0.
-            left: Places the bins at the left bin-edge.
+            - center: Places the bin in the center of the bin range.
+            - true_center: Places the bins in the center of the available data, this fixes problems close to 0.
+            - left: Places the bins at the left bin-edge.
         norm_bin_size (bool): If true, divide the binned functions by the size of their respective bins
         log_space (bool): If true, use log-spacings
         num_bins (float): Number of bins
         ignore_nan (bool): Remove nan values
         max_half_bin_width (None/float): Default None. If set, this is the maximum (half) bin width allowed
+
     Returns:
-        bins (np.array): The bins of the computed statistics
-        ar1D (np.array): Mean statistic of the binning from ND to 1D on the bins
-        width (np.array): Bin widths
+        (np.ndarray, np.ndarray, np.ndarray): The bins, binned statistic and bin widths
     """
     pos_array = (pos_array.copy()).round(decimals=10)
 
@@ -198,10 +187,9 @@ def get_bins(
         nbins (int): The number of bins
         max_half_bin_width (float): The maximum (half) width of the bins
         log_space (bool): If true, use log separations for the bins
+
     Returns:
-        bins (np.ndarray): List of bin centers
-        half_bin_width (np.ndarray): List of (half) bin widths for each bin center
-        bin_edges (np.ndarray): Unique bin edges
+        (np.ndarray, np.ndarray, np.ndarray): List of bin centers, list of (half) bin widths for unique bin edges
     """
     if log_space:
         bin_range = np.exp(np.linspace(np.log(min_bin), np.log(max_bin), nbins+1))
@@ -238,10 +226,11 @@ def hypersphere_binshell(
         bins (np.ndarray): Bin array (radius)
         dimension (int|float): Euclidean dimension
         bin_widths (np.ndarray): Bin width size
-        grid_widths (tuple): Element widths for each dimension (grid size)
+        grid_widths (tuple): Element widths for each dimension (grid step size)
         centered (bool): If true, bins represent the center of the shell, otherwise the inner radius
+
     Returns:
-        bin_shell (np.ndarray): Hypersphere bin-shell for each bin (radius) with given widths
+        np.ndarray: Hypersphere bin-shell for each bin (radius) with given widths
     """
     if centered:
         r_inner = bins - bin_widths / 2.

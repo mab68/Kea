@@ -1,13 +1,5 @@
 """
-plotting.py
 Provides useful style functions for matplotlib.
-
-Functions
----------
-- modify_rc\n
-- pretty_axes\n
-- set_logticks\n
-- make_ax_step\n
 """
 
 import numpy as np
@@ -15,9 +7,9 @@ import numpy as np
 import matplotlib as mpl
 import matplotlib.pyplot as plt
 
-def modify_rc():
+def modify_latex_rc():
     """Modifies matplotlib's rcParams to use latex fonts"""
-    mpl.rcParams['figure.dpi'] = 250
+    mpl.rcParams['figure.dpi'] = 128
     mpl.rc('text', usetex=True)
     mpl.rc('text.latex', preamble=r'''\usepackage{bm}
 \usepackage{xcolor}

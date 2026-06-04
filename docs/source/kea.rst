@@ -8,6 +8,7 @@ Subpackages
    :maxdepth: 4
 
    kea.statistics
+   kea.utils
 
 Module contents
 ---------------

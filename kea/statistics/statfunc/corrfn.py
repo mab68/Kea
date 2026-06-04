@@ -1,28 +1,13 @@
 """
-corrfn.py
-
 Calculates the autocorrelation function for arbitrary dimension $D$.
 """
 
-from .statfunc_base import StatMetric
-from .statfunc_cupy import process_lags
-from ...utils.geometry import default_physdims, validate_shapes, get_all_lagvecs
+from kea.statistics.statfunc.statfunc_base import StatMetric, process_lags
+from kea.utils.geometry import validate_shapes, get_all_lagvecs
 
 from typing import Optional
 import numpy as np
 import itertools
-
-def statfunc_biased_acf(
-        field_a: np.ndarray,
-        field_b: np.ndarray) -> np.floating:
-    assert np.shape(field_a) == np.shape(field_b), 'Provided fields have different shapes'
-    return np.nansum(field_a * field_b)/np.prod(np.shape(field_a))
-
-def statfunc_acf(
-        field_a: np.ndarray,
-        field_b: np.ndarray) -> np.floating:
-    assert np.shape(field_a) == np.shape(field_b), 'Provided fields have different shapes'
-    return np.nanmean(field_a * field_b)
 
 @validate_shapes('field')
 def complete_symmetric_correlation_function(
@@ -45,9 +30,9 @@ def complete_symmetric_correlation_function(
         max_lag (int): Maximum lag (as grid index) to go to
         longitudinal (bool): Whether to calculate along 1D
         biased (bool): If true, apply biased normalization
+
     Returns:
-        lags (np.ndarray): The array of lags
-        acf (np.ndarray): Computed ACF. [Note, this might need to be reshaped depending on your requirements]
+        (np.ndarray, np.ndarray): The array of lags and computed ACF [Note, this might need to be reshaped depending on your requirements]
     """
     # If looking for the longitudinal/transverse SF, then just iterate over "1D" lags
     D = field.ndim
@@ -87,7 +72,8 @@ def complete_symmetric_correlation_function(
             flipped_field = np.flip(flipped_field, axis=flip_axes)
 
         # 2. Compute the partial ACF
-        Q_part = process_lags(np.ascontiguousarray(flipped_field), lags, stat_metric)[:,0]
+        _, Q_part = process_lags(flipped_field, lags, stat_metric)
+        Q_part = Q_part[:,0]
         Q_part = Q_part.reshape(lagshape_nd)
 
         # 3. Stitch this orthant into the complete ACF
@@ -128,9 +114,9 @@ def partial_correlation_function(
         max_lag (int): Maximum lag (as grid index) to go to (if lags not provided)
         longitudinal (bool): Whether to calculate along 1D
         biased (bool): If true, apply biased normalization
+
     Returns:
-        lags (np.ndarray): The array of lags
-        acf (np.ndarray): Computed ACF. [Note, this might need to be reshaped depending on your requirements]
+        (np.ndarray, np.ndarray): The array of lags and computed ACF [Note, this might need to be reshaped depending on your requirements]
     """
     # If looking for the longitudinal/transverse SF, then just iterate over "1D" lags
     D = field.ndim
@@ -148,5 +134,5 @@ def partial_correlation_function(
     stat_metric = StatMetric.CORR
     if biased:
         stat_metric = StatMetric.BIAS_CORR
-    acf = process_lags(np.ascontiguousarray(field), lags, stat_metric)
+    lags, acf = process_lags(field, lags, stat_metric)
     return lags, acf

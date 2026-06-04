@@ -1,16 +1,5 @@
 """
-geometry.py
-
 Provides common methods associated with the geometry e.g., grid size calculation etc.
-
-Functions
----------
-- validate_shapes
-- default_physdims
-- volume_hypersphere
-- get_all_lagvecs
-- get_dxdk
-- get_kvec
 """
 
 from typing import Optional
@@ -19,9 +8,10 @@ import inspect
 import numpy as np
 from scipy.special import gamma
 
+from . import TWOPI
+
 # The default physical scale that is automatically applied if none are given for each function call
 # It is assumed that this applies equally for each cartesian axes
-TWOPI = 2.*np.pi
 DEFAULT_PHYS_SCALE = 2.*np.pi
 
 def validate_shapes(*param_names: str):

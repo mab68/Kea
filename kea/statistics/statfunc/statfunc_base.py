@@ -1,6 +1,8 @@
 """
-statfunc_base.py
+Generic function to calculate structure function or correlation function (all in real-space).
 """
+
+from kea.utils import get_calculation_mode
 
 from typing import Optional
 from enum import IntEnum
@@ -18,81 +20,45 @@ class StatMetric(IntEnum):
     BIAS_CORR = 2
     STRFN = 3
 
-class CalculationMode(IntEnum):
-    """
-    Set the calculate mode for statfuncs:
-    - USE_CPU (do computations only on the CPU)
-    - USE_GPU (use cupy to do computations on the GPU)
-    - DISTRIBUTE_LAGS (distribute lags across computers/cores via MPI)
-
-    Set multiple calculation modes using a pair-tuple e.g., (DISTRIBUTE_LAGS, USE_CPU)
-    """
-    USE_CPU = 0
-    USE_GPU = 1
-    DISTRIBUTE_LAGS = 2
-
-CALCULATION_MODE_FLAGS = (CalculationMode.USE_CPU,)
-def set_calculation_mode(
-        use_cpu: Optional[bool]=True,
-        use_gpu: Optional[bool]=False,
-        distribute_lags: Optional[bool]=False) -> tuple[CalculationMode] | tuple[CalculationMode,CalculationMode]:
-    """set_calculation_mode(use_cpu, use_gpu, distribute_lags)\n
-
-    Set the calculate mode for statfuncs:
-    - USE_CPU (do computations only on the CPU)
-    - USE_GPU (use cupy to do computations on the GPU)
-    - DISTRIBUTE_LAGS (distribute lags across computers/cores via MPI)
-
-    Set multiple calculation modes using a pair-tuple e.g., (DISTRIBUTE_LAGS, USE_CPU)
-
-    Args:
-        use_cpu (bool): If true, use the CPU for calculations
-        use_gpu (bool): If true, use the GPU for calculations
-        distribute_lags (bool): If true, distribute the lag-array calculations across available processes
-    Returns:
-        tuple: Current flags
-    """
-    if use_cpu and use_gpu:
-        raise ValueError('Cannot do both GPU and CPU computations')
-    if (not use_cpu and distribute_lags) or (not use_gpu and distribute_lags):
-        raise ValueError('Need to use CPU or GPU')
-    if (not use_cpu) and (not use_gpu) and (not distribute_lags):
-        raise ValueError('No flags set')
-    flags = []
-    if use_cpu:
-        flags.append(CalculationMode.USE_CPU)
-    if use_gpu:
-        flags.append(CalculationMode.USE_GPU)
-    if distribute_lags:
-        flags.append(CalculationMode.DISTRIBUTE_LAGS)
-    CALCULATION_MODE_FLAGS = tuple(flags)
-    print('Set statistic function calculation flags: {CALCULATION_MODE_FLAGS}')
-    return CALCULATION_MODE_FLAGS
-
-def _process_gpu(
+def _calc_stat(
         field: np.ndarray,
         lags: np.ndarray,
         stat_metric: StatMetric,
-        powers: Optional[np.ndarray]=None):
+        powers: Optional[np.ndarray] = None,
+        use_gpu: Optional[bool] = False) -> np.ndarray:
     """process_lags(field, lags, stat_metric, powers)\n
 
-    Process the lags using the GPU (cupy)
+    Process the lags using the CPU or GPU
     
     Args:
-        field (np.ndarray):
+        field (np.ndarray): Field to compute statistic for
         lags (np.ndarray): List of lag vectors
         stat_metric (StatMetric): The statistic to calculate
         powers (None|np.ndarray): If calculating the structure function, what orders to calculate
+        use_gpu (bool): If true, use the GPU via `cupy`
+
     Returns:
         (np.ndarray, np.ndarray): Lags and calculated statistic function at those lags
     """
-    import cupy as cp
+
     if powers is None:
         powers = np.array([2,])
-    num_powers = len(powers)
-    powers_gpu = cp.asarray(powers, dtype=cp.int64)
-    out_gpu = cp.zeros((len(lags), num_powers), dtype=cp.float64)
-    field_gpu = cp.asarray(field, dtype=cp.float64)
+
+    if use_gpu:
+        # Using GPU so use cupy
+        try:
+            import cupy as compute_lib
+        except:
+            raise ValueError('Cannot use the GPU -- `cupy` not installed')
+
+        powers_gpu = compute_lib.asarray(powers, dtype=compute_lib.int64)
+        field_gpu = compute_lib.asarray(field, dtype=compute_lib.float64)
+    else:
+        # If using the CPU, use numpy instead of cupy
+        compute_lib = np
+        powers_gpu = powers
+        field_gpu = field
+    out_gpu = compute_lib.zeros((len(lags), len(powers)), dtype=compute_lib.float64)
     
     shape = field_gpu.shape
     num_dims = len(shape)
@@ -112,63 +78,17 @@ def _process_gpu(
         denom = view1.size if stat_metric in (StatMetric.CORR, StatMetric.STRFN) else total_elements
 
         if stat_metric in (StatMetric.CORR, StatMetric.BIAS_CORR):
-            out_gpu[i, 0] = np.nansum(view1 * view2) / denom
+            out_gpu[i, 0] = compute_lib.nansum(view1 * view2) / denom
         elif stat_metric == StatMetric.STRFN:
-            diff = cp.abs(view1 - view2)
+            diff = compute_lib.abs(view1 - view2)
             diff_powered = diff[..., None]**powers_gpu
-            total_diffs = cp.nansum(diff_powered, axis=tuple(range(diff_powered.ndim - 1)))
+            total_diffs = compute_lib.nansum(diff_powered, axis=tuple(range(diff_powered.ndim - 1)))
             out_gpu[i,:] = total_diffs / denom
 
-    return cp.asnumpy(out_gpu)
-
-def _process_cpu(
-        field: np.ndarray,
-        lags: np.ndarray,
-        stat_metric: StatMetric,
-        powers: Optional[np.ndarray]=None):
-    """process_lags(field, lags, stat_metric, powers)\n
-
-    Process the lags using the CPU (native numpy)
-    
-    Args:
-        field (np.ndarray):
-        lags (np.ndarray): List of lag vectors
-        stat_metric (StatMetric): The statistic to calculate
-        powers (None|np.ndarray): If calculating the structure function, what orders to calculate
-    Returns:
-        (np.ndarray, np.ndarray): Lags and calculated statistic function at those lags
-    """
-    if powers is None:
-        powers = np.array([2,])
-    num_powers = len(powers)
-    out = np.zeros((len(lags), num_powers))
-    
-    shape = field.shape
-    num_dims = len(shape)
-    total_elements = field.size
-
-    for i, lag in enumerate(lags):
-        _dims = len(lag)
-        s1 = [slice(0,shape[d]) for d in range(num_dims)]
-        s2 = [slice(0,shape[d]) for d in range(num_dims)]
-        for d in range(_dims):
-            s1[d] = slice(lag[d],shape[d])
-            s2[d] = slice(0,shape[d]-lag[d])
-        
-        view1 = field[tuple(s1)]
-        view2 = field[tuple(s2)]
-
-        denom = view1.size if stat_metric in (StatMetric.CORR, StatMetric.STRFN) else total_elements
-
-        if stat_metric in (StatMetric.CORR, StatMetric.BIAS_CORR):
-            out[i, 0] = np.nansum(view1 * view2) / denom
-        elif stat_metric == StatMetric.STRFN:
-            diff = np.abs(view1 - view2)
-            diff_powered = diff[..., None]**powers
-            total_diffs = np.nansum(diff_powered, axis=tuple(range(diff_powered.ndim - 1)))
-            out[i,:] = total_diffs / denom
-
-    return out
+    if use_gpu:
+        return compute_lib.asnumpy(out_gpu)
+    else:
+        return out_gpu
 
 def process_lags(
         field: np.ndarray,
@@ -180,16 +100,15 @@ def process_lags(
     Process the lags using the set calculation modes
     
     Args:
-        field (np.ndarray):
+        field (np.ndarray): Field to compute statistic for
         lags (np.ndarray): List of lag vectors
         stat_metric (StatMetric): The statistic to calculate
         powers (None|np.ndarray): If calculating the structure function, what orders to calculate
+
     Returns:
         (np.ndarray, np.ndarray): Lags and calculated statistic function at those lags
     """
-    do_distribute = CalculationMode.DISTRIBUTE_LAGS in CALCULATION_MODE_FLAGS
-    do_cpu = CalculationMode.USE_CPU in CALCULATION_MODE_FLAGS
-    do_gpu = CalculationMode.USE_GPU in CALCULATION_MODE_FLAGS
+    use_cpu, use_gpu, do_distribute = get_calculation_mode()
 
     if do_distribute:
         try:
@@ -201,15 +120,5 @@ def process_lags(
         size = comm.Get_size()
         lags = lags[rank::size]
 
-    if do_gpu:
-        process_function = _process_gpu
-        try:
-            import cupy as cp
-        except:
-            raise ValueError('Cannot do GPU calculations -- `cupy` not configured/installed.')
-    else:
-        process_function = _process_cpu
-
-    statfunc = process_function(field, lags, stat_metric, powers)
+    statfunc = _calc_stat(field, lags, stat_metric, powers, use_gpu)
     return lags, statfunc
-
