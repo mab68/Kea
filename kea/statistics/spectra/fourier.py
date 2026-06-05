@@ -27,7 +27,6 @@ def fourier_modal_spectrum(
     Returns:
         (tuple, np.ndarray): wavenumber arrays and modal spectrum
     """
-    print(phys_dims)
     grid_dims = field_a.shape
     dx, _ = get_dxdk(grid_dims, phys_dims)
     dX = np.prod(dx)

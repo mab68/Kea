@@ -61,7 +61,7 @@ def _make_lognormal(
         np.ndarray: Exponential field
     """
     return np.exp(field * np.sqrt(scaling))
-    
+
 def _make_correlated_noise(
         field: np.ndarray,
         seed: Optional[int] = None) -> np.ndarray:
@@ -102,7 +102,7 @@ def make_field(
         noise (np.ndarray): If provided, the specific noise field to use.
         phys_dims (tuple): Physical scales
         seed (tuple): Random number seed for the random generator
-        normalize_output (bool): If true, normalize the output to the range [-1, 1]
+        normalize_output (bool): If true, normalize the output field
 
     Returns:
         np.ndarray: Synthetic field
@@ -142,7 +142,8 @@ def make_multifractal_field(
         spectrum_kwargs: dict[str,float],
         spectrum_function: str|Callable,
         phys_dims: Optional[tuple[float,...]] = None,
-        seeds: Optional[tuple[int,int,int]] = None) -> np.ndarray:
+        seeds: Optional[tuple[int,int,int]] = None,
+        normalize_output: Optional[bool] = False) -> np.ndarray:
     """make_multifractal_field(grid_dims, gauss_spectrum_kwargs, gauss_spectrum_function, scaling, spectrum_kwargs, spectrum_function, phys_dims, seeds)\n
     
     Generates a multifractal field with parameters described by `spectrum_kwargs` and `scaling`.
@@ -156,6 +157,7 @@ def make_multifractal_field(
         spectrum_function (str|Callable): Function that defines the spectrum of the multiplicative field
         phys_dims (tuple): Physical scales
         seeds (tuple): Random number seeds to the 3 different random generators
+        normalize_output (bool): If true, normalize the output field
 
     Returns:
         np.ndarray: Multifractal field
@@ -164,12 +166,12 @@ def make_multifractal_field(
         seeds = (None, None, None)
 
     # Make monofractal field
-    gaussian_field = make_field(grid_dims, gauss_spectrum_kwargs, gauss_spectrum_function, phys_dims, seeds[0])
+    gaussian_field = make_field(grid_dims, gauss_spectrum_kwargs, gauss_spectrum_function, None, phys_dims, seeds[0])
     # Make into positive log-normal field
     log_field = _make_lognormal(gaussian_field, scaling)
     # Make into a correlated noise field
     correlated_noise = np.fft.fftshift(np.fft.fftn(_make_correlated_noise(log_field, seed=seeds[1])))
     # Use multiplicative noise to generate a multifractal field
-    multifactal_field = make_field(grid_dims, spectrum_kwargs, spectrum_function, correlated_noise, phys_dims, seeds[2])
+    multifactal_field = make_field(grid_dims, spectrum_kwargs, spectrum_function, correlated_noise, phys_dims, seeds[2], normalize_output)
 
     return multifactal_field

@@ -2,13 +2,27 @@
 Provides useful style functions for matplotlib.
 """
 
+from typing import Optional
+
 import numpy as np
 
 import matplotlib as mpl
 import matplotlib.pyplot as plt
 
-def modify_latex_rc():
-    """Modifies matplotlib's rcParams to use latex fonts"""
+def modify_latex_rc() -> None:
+    """modify_latex_rc()
+
+    Modifies matplotlib's rcParams to use LaTeX fonts.
+    This makes plots look consistent when placed in LaTeX documents.
+
+    If this doesn't work you probably don't have LaTeX installed properly.
+
+    I have found the conda-forge version doesn't work too well and best to
+    install it yourself and get a properly functioning tlmgr, then you
+    can add custom fonts etc:
+
+    - https://github.com/James-Yu/LaTeX-Workshop/wiki/Install
+    """
     mpl.rcParams['figure.dpi'] = 128
     mpl.rc('text', usetex=True)
     mpl.rc('text.latex', preamble=r'''\usepackage{bm}
@@ -17,7 +31,7 @@ def modify_latex_rc():
     #mpl.rcParams['text.latex.preamble']=[r"\usepackage{bm}", r"\usepackage{xcolor}"]
     mpl.rc('font', family='serif', serif='Computer Modern', size=8)
 
-def pretty_axes(axx):
+def pretty_axes(axx) -> None:
     """Makes axes ticks inside and on both sides"""
     axx.yaxis.set_ticks_position('both')
     axx.xaxis.set_ticks_position('both')
@@ -27,7 +41,7 @@ def pretty_axes(axx):
     axx.tick_params(axis='x', direction='in', which='minor')
     axx.grid(linestyle=':', alpha=0.3, linewidth=0.5, color='gray')
 
-def set_logticks(ax, x=False, y=True, numticks=10):
+def set_logticks(ax, x=False, y=True, numticks=10) -> None:
     """Enforce log ticks to have minor ticks (if possible)"""
     locmaj = mpl.ticker.LogLocator(base=10.0, numticks=numticks)
     if x:
@@ -40,8 +54,8 @@ def set_logticks(ax, x=False, y=True, numticks=10):
     if y:
         ax.yaxis.set_minor_locator(locmin)
 
-def make_ax_step(N, step=None):
-    """For imshow, make grid ticks evenly spaced"""
+def make_ax_step(N: int, step: Optional[int]=None) -> tuple[np.ndarray, np.ndarray]:
+    """For e.g., imshow, make grid ticks evenly spaced"""
     if step is None:
         step = N//4
     tick = np.arange(0, N+1, step)

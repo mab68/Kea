@@ -113,8 +113,8 @@ def transform_spectrum(
         current_type: str|SpectrumType,
         new_type: str|SpectrumType,
         grid_dims: tuple[int,...],
-        phys_dims: Optional[tuple[float,...]],
-        bin_widths: Optional[np.ndarray]=None,
+        phys_dims: Optional[tuple[float,...]] = None,
+        bin_widths: Optional[np.ndarray] = None,
         is_centered: Optional[bool] = True) -> tuple[np.ndarray, np.ndarray]:
     """transform_spectrum(k, fek, orig_dim, current_type, new_type)
 
@@ -131,7 +131,7 @@ def transform_spectrum(
         new_type (str|SpectrumType): Requested spectrum type
 
     Returns:
-        np.ndarray: `fek` in the `new_type` convention
+        (np.ndarray, np.ndarray): `k` and `fek` in the `new_type` convention
     """
     # Convert string inputs to SpectrumType
     if isinstance(current_type, str):
@@ -167,8 +167,8 @@ def transform_spectrum(
         # Otherwise we need to load the jacobian/shell volume factors
         dx, dk = get_dxdk(grid_dims, phys_dims)
         if bin_widths is None:
-            bin_widths = np.ones_like(k)*dk
-        binshell_kernel = binning.hypersphere_binshell(k, dimension, bin_widths, dx, is_centered)
+            bin_widths = np.ones_like(k)*dk[0]
+        binshell_kernel = binning.hypersphere_binshell(k, dimension, bin_widths, centered=is_centered)
 
         if current_type == SpectrumType.INTEGRATED and new_type == SpectrumType.AVERAGED:
             # Converting integrated -> averaged

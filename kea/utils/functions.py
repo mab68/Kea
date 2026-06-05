@@ -29,7 +29,7 @@ def get_raise_parameters(
 
 def pure_powerlaw(
         grid: np.ndarray,
-        **kwargs: float):
+        **kwargs: float) -> np.ndarray:
     """pure_powerlaw(grid, **kwargs)\n
 
     Generates a pure power-law function with index `powerlaw`.
@@ -52,9 +52,28 @@ def pure_powerlaw(
     result[~np.isfinite(result)] = 0.
     return result
 
+def cutoff_powerlaw(
+        grid: np.ndarray,
+        **kwargs: float) -> np.ndarray:
+    """cutoff_powerlaw(grid, **kwargs)\n
+    
+    Generates a pure power-law with a (large) cutoff scale to dampen long-range correlations.
+
+    Args:
+        grid (np.ndarray): Value grid
+        powerlaw (float): First power-law index
+        cutoff_scale (float): Scale to being damping long-range correlations
+
+    Returns:
+        np.ndarray: Evaluated equation on `grid`
+    """
+    powerlaw, cutoff_scale = get_raise_parameters(('powerlaw', 'cutoff_scale'), kwargs)
+    _grid = np.sqrt(grid**2 + cutoff_scale**2)
+    return pure_powerlaw(_grid, powerlaw=powerlaw)
+
 def broken_powerlaw(
         grid: np.ndarray,
-        **kwargs: float):
+        **kwargs: float) -> np.ndarray:
     """broken_powerlaw(grid, **kwargs)\n
     
     Generates a broken power-law that has a smooth transition.
@@ -80,7 +99,7 @@ def broken_powerlaw(
 
 def powerlaw_with_exponentials(
         grid: np.ndarray,
-        **kwargs: float):
+        **kwargs: float) -> np.ndarray:
     """powerlaw_with_exponentials(grid, **kwargs)\n
 
     Generates a power-law region in-between exponential growth and decay regions.

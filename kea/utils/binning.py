@@ -216,7 +216,7 @@ def hypersphere_binshell(
         bins: np.ndarray,
         dimension: int | float,
         bin_widths: np.ndarray,
-        grid_widths: tuple,
+        grid_widths: Optional[tuple] = None,
         centered: Optional[bool] = False) -> np.ndarray:
     """hypersphere_binshell(bins, dimension, bin_widths, grid_widths, centered)\n
 
@@ -240,5 +240,8 @@ def hypersphere_binshell(
         r_outer = bins + bin_widths
     
     shell_volume = volume_hypersphere(r_outer, dimension) - volume_hypersphere(r_inner, dimension)
-    grid_volume_scale = np.prod(grid_widths)**dimension
+    if grid_widths:
+        grid_volume_scale = np.prod(grid_widths)**dimension
+    else:
+        grid_volume_scale = 1.
     return shell_volume / grid_volume_scale

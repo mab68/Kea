@@ -143,8 +143,9 @@ def volume_hypersphere(
     Args:
         radius (float): Radius of the hypersphere
         dimension (int): (Euclidean) dimension of the hypersphere
+
     Returns:
-        volume (float): Volume of the hypersphere
+        float: Volume of the hypersphere
     """
     D = float(dimension)
     return (np.pi**(D/2.) / gamma(D/2. + 1.)) * radius**D
@@ -157,25 +158,38 @@ def get_mesh(
     
     Args:
         axes_vec (tuple): axes associated with each dimension
+
     Returns:
-        norm_mesh (np.ndarray): Magnitude mesh
+        np.ndarray: Magnitude mesh
     """
     mesh = np.meshgrid(*axes_vec, indexing='xy')
     norm_mesh = np.linalg.norm(mesh, axis=0)
     return norm_mesh
 
-def get_all_lagvecs(
-        grid_dims: tuple[float,...]) -> np.ndarray:
-    """get_all_lagvecs(grid_dims)\n
+def get_lagvecs(
+        grid_dims: tuple[int,...],
+        center_pos: Optional[int|np.integer|tuple[int|np.integer,...]] = None) -> np.ndarray:
+    """get_lagvecs(grid_dims)\n
     
-    Get all the lagvectors as a list required to compute the positive lag quadrant of the ACF/SF
+    Get all the lagvectors as a list
 
     Args:
         grid_dims (tuple): Number of grid points in each dimension (N_x, N_y, ...)
+        center_pos (int|tuple): Index position in the grid to represent the center
+
     Returns:
-        lagvecs (np.ndarray): List of vector indices that represent lag-shifts covering the `grid_dims` domain
+        np.ndarray: List of vector indices that represent lag-shifts covering the `grid_dims` domain
     """
-    return np.transpose(np.indices(grid_dims).reshape((-1, np.prod(grid_dims))))
+    if center_pos is None:
+        center_pos = (0,)*len(grid_dims)
+    if isinstance(center_pos, int) or isinstance(center_pos, np.integer):
+        center_pos = (center_pos,)*len(grid_dims)
+    if len(center_pos) != len(grid_dims):
+        raise ValueError('Position %s does not have the same dimensions as the grid %s' % (str(center_pos), str(grid_dims)))
+
+    axes = [np.arange(grid_dims[i]) - center_pos[i] for i in range(len(grid_dims))]
+    grid = np.meshgrid(*axes, indexing='ij', copy=False)
+    return np.transpose(np.reshape(grid, (-1, np.prod(grid_dims))))
 
 @default_physdims('grid_dims')
 def get_dxdk(
@@ -188,9 +202,9 @@ def get_dxdk(
     Args:
         grid_dims (tuple): Number of grid points in each dimension (N_x, N_y, ...)
         phys_dims (tuple): The physical length scale for each dimension (L_x, L_y, ...)
+
     Returns:
-        dx (tuple): Grid spacing/sampling rate for each dimension e.g., dx = L_x/N_x, ...
-        dk (tuple): Wavenumber sampling rate for each dimension e.g., dk_x = 2*pi/L_x, ...
+        (tuple, tuple): Grid spacing/sampling rate and wavenumber sampling rate
     """
     dx, dk = [], []
     for i, N in enumerate(grid_dims):
@@ -209,12 +223,12 @@ def get_kvec(
     Args:
         grid_dims (tuple): Number of grid points in each dimension (N_x, N_y, ...)
         phys_dims (tuple): The physical length scale for each dimension (L_x, L_y, ...)
+
     Returns:
-        kvec (tuple[np.ndarray]): Wavenumber array for each dimension: k_x, k_y, ...
+        tuple[np.ndarray]: Wavenumber array for each dimension: k_x, k_y, ...
     """
     dx, _ = get_dxdk(grid_dims, phys_dims)
     kvec = []
     for i, N in enumerate(grid_dims):
         kvec.append(np.fft.fftshift(np.fft.fftfreq(N)*TWOPI/dx[i]))
     return tuple(kvec)
-

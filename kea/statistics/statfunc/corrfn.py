@@ -3,7 +3,7 @@ Calculates the autocorrelation function for arbitrary dimension $D$.
 """
 
 from kea.statistics.statfunc.statfunc_base import StatMetric, process_lags
-from kea.utils.geometry import validate_shapes, get_all_lagvecs
+from kea.utils.geometry import validate_shapes, get_lagvecs
 
 from typing import Optional
 import numpy as np
@@ -32,7 +32,7 @@ def complete_symmetric_correlation_function(
         biased (bool): If true, apply biased normalization
 
     Returns:
-        (np.ndarray, np.ndarray): The array of lags and computed ACF [Note, this might need to be reshaped depending on your requirements]
+        (np.ndarray, np.ndarray): The array of lags and computed ACF
     """
     # If looking for the longitudinal/transverse SF, then just iterate over "1D" lags
     D = field.ndim
@@ -51,7 +51,7 @@ def complete_symmetric_correlation_function(
     shape_nd = (N,)*D
     mid = N//2
     lagshape_nd = (max_lag,)*D
-    lags = get_all_lagvecs(lagshape_nd)
+    lags = get_lagvecs(lagshape_nd)
 
     ## Initialize the full N_dimensional ACF array
     Q_full = np.zeros(shape_nd)
@@ -95,7 +95,7 @@ def complete_symmetric_correlation_function(
         # Copy partial into opposite quadrant of full
         Q_full[target_slices] = Q_part[strip][read_slices]
 
-    return lags, Q_full
+    return get_lagvecs(shape_nd, mid).reshape((*shape_nd, D)), Q_full
 
 @validate_shapes('field')
 def partial_correlation_function(
@@ -128,7 +128,7 @@ def partial_correlation_function(
         if max_lag is None:
             max_lag = np.min(np.shape(field))//2
         lagvec_shape = (max_lag,)*D
-        lags = get_all_lagvecs(lagvec_shape)
+        lags = get_lagvecs(lagvec_shape)
 
     # Calculate SF
     stat_metric = StatMetric.CORR
