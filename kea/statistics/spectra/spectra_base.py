@@ -11,7 +11,7 @@ from enum import IntEnum
 import numpy as np
 
 class FourierNorm(IntEnum):
-    """
+    r"""
     Describes the following normalization conventions:\n
 
     - T: angular wavenumbers and $(2\pi)^{-D}$ on the forwards transform
@@ -190,7 +190,7 @@ def convert_normalization_convention(
         current_norm: str|FourierNorm,
         new_norm: str|FourierNorm,
         spectrum_type: SpectrumType) -> tuple[tuple, np.ndarray]:
-    """convert_normalization_convention(kvec, fek, dimension, current_norm, new_norm, spectrum_type)\n
+    r"""convert_normalization_convention(kvec, fek, dimension, current_norm, new_norm, spectrum_type)\n
 
     Converts between different spectrum normalization conventions:\n
     - T: angular wavenumbers and $(2\pi)^{-D}$ on the forwards transform

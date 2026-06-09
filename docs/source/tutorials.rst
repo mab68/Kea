@@ -11,4 +11,5 @@ Tutorials
    tutorials/3_powerspectra_1d
    tutorials/4_masking
    tutorials/5_solar_wind_example
+   tutorials/6_icm_example
 

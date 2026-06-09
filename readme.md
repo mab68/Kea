@@ -1,4 +1,6 @@
 
+[![License](https://img.shields.io/github/license/mab68/kea)](https://github.com/mab68/kea/blob/Kea1.0/LICENSE)
+
 # **KEA**
 
 **KEA** is a backronym for **A**nalysis **E**ngine (Mar)**K**. It holds all the basic, functional style analysis scripts for turbulence analysis, with the purpose of analysis for the intracluster medium (ICM), but written generally enough to apply to many other regimes. For example, this package has been used to analyze solar wind timeseries data, interstellar medium telescope observations, and three-dimensional turbulence simulations. It provides:
@@ -57,7 +59,6 @@ sys.path.append('path/to/Kea/')
 ```
 numpy
 scipy
-numba
 sympy
 matplotlib
 ```

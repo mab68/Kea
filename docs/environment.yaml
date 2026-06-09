@@ -1,0 +1,35 @@
+name: kea
+channels:
+  - conda-forge
+  - defaults
+dependencies:
+  # development
+  - python=3.14.5
+  - jupyterlab
+
+  # computing
+  - numpy
+  - scipy
+  # - numba
+  - sympy
+  - matplotlib
+  - astropy
+  # - cupy
+
+  # extra
+  - healpy
+
+  # documentation
+  - sphinx
+  - sphinx-book-theme
+  - mathjax
+  - nbsphinx
+  - nbsphinx-link
+  - sphinx-autodoc-typehints
+  - sphinxcontrib-napoleon
+  - myst-parser
+
+  - pip
+  - pip:
+    - sphinx-rtd-theme
+    - pyspedas
