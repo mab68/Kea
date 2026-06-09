@@ -1,5 +1,5 @@
-Spectra Documentation
----------------------
+Spectral Density Estimation
+---------------------------
 
 Currently **KEA** offers the following spectral estimation techniques:
 

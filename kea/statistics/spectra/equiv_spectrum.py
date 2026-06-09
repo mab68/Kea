@@ -10,7 +10,7 @@ from typing import Optional
 import numpy as np
 import sympy as sp
 
-def filter_bad(
+def _filter_bad(
         kk: np.ndarray,
         fek: np.ndarray,
         ko: Optional[np.ndarray]=None):
@@ -49,7 +49,7 @@ def filter_bad(
         kk = ko[ko <= kmax]
     return kk, fek
 
-def sf_to_spectrum(
+def _sf_to_spectrum(
         ell: np.ndarray,
         sf2: np.ndarray,
         b: float,
@@ -71,10 +71,10 @@ def sf_to_spectrum(
     BfekS = (1./2.) * ell**2 * dSdell / b
     ke = b / ell
     ke, BfekS = ke[::-1], BfekS[::-1]
-    ke, BfekS = filter_bad(ke, BfekS, ko)
+    ke, BfekS = _filter_bad(ke, BfekS, ko)
     return ke, BfekS
 
-def debias(
+def _debias(
         est_alpha: np.ndarray,
         b: float,
         D: float):
@@ -126,7 +126,7 @@ def esf_integrated_spectrum(
             b_factor = 1.
         else:
             b_factor = np.sqrt(2.*float(dimension) - 2.)
-    ke, BfekS = sf_to_spectrum(physical_lags, structure_function, b_factor, fourier_wavenumbers)
+    ke, BfekS = _sf_to_spectrum(physical_lags, structure_function, b_factor, fourier_wavenumbers)
     a_fekS = get_powerlaw(ke, BfekS)
-    B = debias(a_fekS, b_factor, float(dimension))
+    B = _debias(a_fekS, b_factor, float(dimension))
     return ke, BfekS, BfekS/B

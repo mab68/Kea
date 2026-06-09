@@ -1,5 +1,5 @@
-Statistic Functions Documentation
----------------------------------
+Statistic Functions
+-------------------
 
 Currently **KEA** offers the following lag statistics functions:
 

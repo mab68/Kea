@@ -12,7 +12,7 @@ import numpy as np
 
 class FourierNorm(IntEnum):
     """
-    Describes the following normalization conventions:
+    Describes the following normalization conventions:\n
 
     - T: angular wavenumbers and $(2\pi)^{-D}$ on the forwards transform
     - I: linear wavenumbers and no $(2\pi)^{-D}$ factors (cancelled by the angular-linear wavenumber conversion)
@@ -24,7 +24,7 @@ class FourierNorm(IntEnum):
 
 class SpectrumType(IntEnum):
     """
-    Describes the spectrum type/how the spectrum is binned:
+    Describes the spectrum type/how the spectrum is binned:\n
 
     - MODAL: Represents the PSD in waveVECTOR-space
     - INTEGRATED: Represents the contribution to the PSD that lie between magnitude wavenumbers k and k+dk (assuming left-aligned binning)
@@ -61,7 +61,7 @@ def bin_spectrum(
             - ignore_nan (bool): If true, ignore NaN values of the binned result
             - cut_excess (bool): Default True. If true, cut off wavenumbers larger than the basis direction
             - nan_small (bool): Default False. If true, set to nan all bins that have a small number of elements
-            - bin_center (bool): Default False. If true, return wavenumbers from the center of the bin region
+            - bin_center (bool): Default True. If true, return wavenumbers from the center of the bin region
             - norm_bin_size (bool): Default False. If true, divide by the size of the bin
 
     Returns:
@@ -83,10 +83,12 @@ def bin_spectrum(
     min_bin = kwargs.get('min_bin', min_k)
     max_bin = kwargs.get('max_bin', None)
     bin_center = kwargs.get('bin_center', True)
-    norm_bin_size = kwargs.get('norm_bin_size', False)
+    if bin_center:
+        bin_center = 'true_center'
+    norm_bin_size = kwargs.get('norm_bin_size', True)
     log_space = kwargs.get('log_space', False)
     num_bins = kwargs.get('num_bins', None)
-    ignore_nan = kwargs.get('ignore_nan', False)
+    ignore_nan = kwargs.get('ignore_nan', True)
     max_half_bin_width = kwargs.get('max_half_bin_width', None)
     if spec_type == SpectrumType.INTEGRATED:
         ## Integrate over the bin-shells
@@ -168,7 +170,7 @@ def transform_spectrum(
         dx, dk = get_dxdk(grid_dims, phys_dims)
         if bin_widths is None:
             bin_widths = np.ones_like(k)*dk[0]
-        binshell_kernel = binning.hypersphere_binshell(k, dimension, bin_widths, centered=is_centered)
+        binshell_kernel = binning.hypersphere_binshell(k, dimension, bin_widths, grid_widths=dk[0], centered=is_centered)
 
         if current_type == SpectrumType.INTEGRATED and new_type == SpectrumType.AVERAGED:
             # Converting integrated -> averaged
@@ -190,7 +192,7 @@ def convert_normalization_convention(
         spectrum_type: SpectrumType) -> tuple[tuple, np.ndarray]:
     """convert_normalization_convention(kvec, fek, dimension, current_norm, new_norm, spectrum_type)\n
 
-    Converts between different spectrum normalization conventions:
+    Converts between different spectrum normalization conventions:\n
     - T: angular wavenumbers and $(2\pi)^{-D}$ on the forwards transform
     - I: linear wavenumbers and no $(2\pi)^{D}$ factors (cancelled by the angular-linear wavenumber conversion)
     - C: angular wavenumbers and $(2\pi)^{-D}$ on the backwards transform

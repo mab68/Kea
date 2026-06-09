@@ -23,6 +23,8 @@ extensions = [
     "sphinx.ext.napoleon", # Supports NumPy/Google style docstrings
     "sphinx.ext.mathjax",  # Renders LaTeX math via MathJax
     "myst_parser",         # Enables Markdown support
+    "nbsphinx_link",
+    "nbsphinx",            # Notebooks
 ]
 # Enable dollar signs ($ and $$) for inline and block math in Markdown
 myst_enable_extensions = ["dollarmath", "amsmath"]

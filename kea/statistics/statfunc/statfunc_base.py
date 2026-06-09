@@ -86,9 +86,15 @@ def _calc_stat(
             out_gpu[i,:] = total_diffs / denom
 
     if use_gpu:
-        return compute_lib.asnumpy(out_gpu)
-    else:
-        return out_gpu
+        out_gpu = compute_lib.asnumpy(out_gpu)
+        # Clear GPU memory references
+        powers_gpu, field_gpu = None, None
+        view1, view2 = None, None
+        if stat_metric == StatMetric.STRFN:
+            diff, diff_powered = None, None
+        compute_lib.get_default_memory_pool().free_all_blocks()
+        compute_lib.get_default_pinned_memory_pool().free_all_blocks()
+    return out_gpu
 
 def process_lags(
         field: np.ndarray,

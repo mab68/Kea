@@ -1,8 +1,8 @@
 
-Kea documentation
+Kea Documentation
 =================
 
-\ **KEA**\ is a backronym for \ **A**\ nalysis \ **E**\ ngine (Mar)\ **K**\ . It holds all the basic, functional style analysis scripts for turbulence analysis, with the purpose of analysis for the intracluster medium (ICM), but written generally enough to apply to many other regimes. For example, this package has been used to analyze solar wind timeseries data, interstellar medium telescope observations, and three-dimensional turbulence simulations. It provides:
+\ **KEA**\  is a backronym for \ **A**\ nalysis \ **E**\ ngine (Mar)\ **K**\ . It holds all the basic, functional style analysis scripts for turbulence analysis, with the purpose of analysis for the intracluster medium (ICM), but written generally enough to apply to many other regimes. For example, this package has been used to analyze solar wind timeseries data, interstellar medium telescope observations, and three-dimensional turbulence simulations. It provides:
 
 * Generation of synthetic stochastic fields, application of noise, and generation of masks
 * Statistical calculation methods like: structure function, correlation functions, and power spectra via different methods
@@ -85,7 +85,8 @@ User Documentation
 .. toctree::
     :maxdepth: 2
 
+    tutorials
     spectra
     statistics_functions
-    simulation
+    simulator
     utility

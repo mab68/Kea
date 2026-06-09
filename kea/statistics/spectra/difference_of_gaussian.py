@@ -107,9 +107,13 @@ def _calc_stat(
 
     if use_gpu:
         # Convert back to numpy array
-        return compute_lib.asnumpy(out_gpu)
-    else:
-        return out_gpu
+        out_gpu = compute_lib.asnumpy(out_gpu)
+        # Clear GPU memory references
+        field_gpu, exposure_gpu, filtered_field, filtered_exp = None, None, None, None
+        compute_lib.get_default_memory_pool().free_all_blocks()
+        compute_lib.get_default_pinned_memory_pool().free_all_blocks()
+
+    return out_gpu
 
 def process_scales(
         field: np.ndarray,
@@ -180,7 +184,7 @@ def dog_averaged_spectrum(
         discrete_scales = wavenumber_to_discrete_scale(wavenumbers[wavenumbers>0.], grid_dims, phys_dims, b_factor)
 
     discrete_scales, dogs = process_scales(field, discrete_scales, exposure_field)
-    dogs = dogs * np.prod(dx)**2 / np.prod(phys_dims)
+    dogs = dogs * np.prod(dx)**2 / np.prod(phys_dims) / dk[0]
     equiv_k = b_factor / (discrete_scales*dx[0])
     return equiv_k, dogs
 
