@@ -9,10 +9,26 @@ from kea.utils import get_calculation_mode
 from typing import Optional
 
 import numpy as np
-from astropy.convolution import Gaussian1DKernel
+# from astropy.convolution import Gaussian1DKernel
 
 
 DEFAULT_SCALE_FACTOR = np.sqrt(2.)
+
+def _gaussian_1d_kernel(scale: float, radius: int) -> np.ndarray:
+    """_gaussian_1d_kernel(scale, radius)\n
+
+    Generates a 1D Gaussian kernel
+
+    Args:
+        scale (float): Sigma of the Gaussian
+        radius (int): Grid size to generate the Gaussian
+    
+    Returns:
+        np.ndarray: 1D Gaussian kernel
+    """
+    x = np.arange(-radius, radius+1, dtype=np.float64)
+    kernel = np.exp(-0.5 * (x/scale)**2)
+    return kernel / np.nansum(kernel)
 
 def _calc_stat(
         field: np.ndarray,
@@ -96,7 +112,7 @@ def _calc_stat(
         # Use separability to make this step faster 
         # NOTE: Currently we always do this step on the CPU
         size = np.nanmax([2*int(10.*s1 + 0.5) + 1, 2*int(10.*s2 + 0.5) + 1])
-        gauss1, gauss2 = Gaussian1DKernel(s1, x_size=size).array, Gaussian1DKernel(s2, x_size=size).array
+        gauss1, gauss2 = _gaussian_1d_kernel(s1, size), _gaussian_1d_kernel(s2, size)
         gaussian_variance = (
             np.nansum(gauss1**2)**dimension
             - 2.*np.nansum(gauss1*gauss2)**dimension

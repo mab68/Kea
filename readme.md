@@ -1,50 +1,23 @@
 
 [![License](https://img.shields.io/github/license/mab68/kea)](https://github.com/mab68/kea/blob/Kea1.0/LICENSE)
 
-# **KEA**
+# 🌌 **kea** 🦜⛰️
 
-**KEA** is a backronym for **A**nalysis **E**ngine (Mar)**K**. It holds all the basic, functional style analysis scripts for turbulence analysis, with the purpose of analysis for the intracluster medium (ICM), but written generally enough to apply to many other regimes. For example, this package has been used to analyze solar wind timeseries data, interstellar medium telescope observations, and three-dimensional turbulence simulations. It provides:
-- Generation of synthetic stochastic fields
-- Statistical calculation methods like: structure function, correlation functions, and power spectra via different methods
+**kea** is a backronym for **A**nalysis **E**ngine (Mar)**K**. It holds all the basic, functional style analysis scripts for turbulence analysis, with the purpose of analysis for the intracluster medium (ICM), but written generally enough to apply to many other regimes. For example, this package has been used to analyze solar wind timeseries data, interstellar medium telescope observations, and three-dimensional turbulence simulations.
 
-<!-- A Kea is the only apline parrot species in the world. Endemic to New Zealand's South Island, Kea are highly intelligent and known for a propensity for vandalism: playfull interacting with humans via stealing their food, pulling apart car rubber windshield seals and wipers, and investigating backpacks of unsuspecting hikers. -->
+## 🔮 Project Goals
 
-## File structure
+- **Simplify tools that are commonly used in astrophysical plasma turbulence analysis**
+- **Standardize and compare power spectral density estimation techniques**
+- **Provide tools to test observation processing pipelines**: synthetic field generation methods and masking tools
 
+## 🛠️ To install
+
+To install, first clone this GitHub repository:
+```bash
+git clone https://github.com/mab68/kea
 ```
-Kea/
-    docs/
-    examples/
-    kea/
-        __init__.py
-        simulator/
-            __init__.py
-            nongaussian.py
-            gaussian.py
-        statistics/
-            __init__.py
-            spectra/
-                __init__.py
-                fourier.py
-                blackman_tukey.py
-                difference_of_gaussian.py
-                equiv_spectrum.py
-            statfunc/
-                __init__.py
-                strfn.py
-                corrfn.py
-                statfunc_numba.py
-        utils/
-            __init__.py
-            geometry.py
-            fitting.py
-            binning.py
-            plotting.py
-```
-
-## To install
-
-To install, simply add the following to your `PYTHONPATH` environment variable in your `~/.bashrc` file
+and then simply add the following to your `PYTHONPATH` environment variable in your `~/.bashrc` file:
 ```bash
 export PYTHONPATH=path/to/Kea:$PYTHONPATH
 ```
@@ -54,11 +27,68 @@ import sys
 sys.path.append('path/to/Kea/')
 ```
 
-## Requirements
+## 📦 Requirements
 
+For the basic set of features provided by **kea**, the following dependencies are required:
 ```
 numpy
 scipy
 sympy
 matplotlib
+```
+
+If using GPU calculations **kea** will additionally require:
+```
+cupy
+```
+
+## 📖 Documentation
+
+Documentation (including Jupyter notebook tutorials and examples) are available on [Read the Docs](https://astrokea-docs.readthedocs.io/en/latest/).
+
+## 📝 TODO:
+
+- [ ] Finish writing documentation
+    - [ ] ICM tutorial example
+    - [ ] PSD method descriptions
+    - [ ] Synthesis methods
+- [ ] Make into a pip-installable package
+- [ ] Implement CI/CD
+
+## 📁 File structure
+
+```
+Kea/
+    docs/
+        source/
+            tutorials/
+                synthetic_fields.ipynb
+                statistical_functions.ipynb
+                powerspectra.ipynb
+                powerspectra_1d.ipynb
+                masking.ipynb
+                solar_wind_example.ipynb
+                icm_example.ipynb
+    kea/
+        simulator/
+            mask.py
+            synthesize.py
+        statistics/
+            spectra/
+                blackman_tukey.py
+                difference_of_gaussian.py
+                equiv_spectrum.py
+                fourier.py
+                spectra_base.py
+            statfunc/
+                corrfn.py
+                statfunc_base.py
+                strfn.py
+        utils/
+            binning.py
+            compute_config.py
+            fitting.py
+            functions.py
+            geometry.py
+            plotting.py
 ```
