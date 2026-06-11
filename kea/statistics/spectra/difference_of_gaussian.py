@@ -9,7 +9,6 @@ from kea.utils import get_calculation_mode
 from typing import Optional
 
 import numpy as np
-# from astropy.convolution import Gaussian1DKernel
 
 
 DEFAULT_SCALE_FACTOR = np.sqrt(2.)

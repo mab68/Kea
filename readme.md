@@ -48,12 +48,16 @@ Documentation (including Jupyter notebook tutorials and examples) are available 
 
 ## 📝 TODO:
 
+- [x] Add noise helper functions
 - [ ] Finish writing documentation
-    - [ ] ICM tutorial example
+    - [ ] ICM example
+    - [ ] Mock ICM example
     - [ ] PSD method descriptions
     - [ ] Synthesis methods
 - [ ] Make into a pip-installable package
 - [ ] Implement CI/CD
+
+- [ ] Write JOSS paper
 
 ## 📁 File structure
 

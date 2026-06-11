@@ -10,6 +10,13 @@ Tutorials
    tutorials/3_powerspectra
    tutorials/3_powerspectra_1d
    tutorials/4_masking
-   tutorials/5_solar_wind_example
-   tutorials/6_icm_example
+   tutorials/5_noise
+
+.. toctree::
+   :maxdepth: 2
+   :caption: Examples:
+
+   examples/1_solar_wind_example
+   examples/2_icm_example
+   examples/3_synthetic_icm_example
 
