@@ -1,0 +1,26 @@
+[build-system]
+requires = ["setuptools>=61.0"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "kea"
+version = "1.0"
+authors = [
+  { name="Mark Bishop", email="mark.bishop@vuw.ac.nz" },
+]
+description = "A short description of your package"
+readme = "README.md"
+requires-python = ">=3.7"
+dependencies = [
+    "numpy>=2.4.6",
+    "scipy>=1.16.3",
+    "sympy>=1.14.0",
+    "matplotlib>=3.10.9",
+]
+
+[project.urls]
+"Homepage" = "https://github.com/mab68/kea"
+"Bug Tracker" = "https://github.com/mab68/kea/issues"
+
+[tool.setuptools.packages.find]
+where = ["src"]

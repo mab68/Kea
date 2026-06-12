@@ -8,7 +8,7 @@
 
 import os
 import sys
-sys.path.insert(0, os.path.abspath('../../'))
+sys.path.insert(0, os.path.abspath('../../src/'))
 
 project = 'kea'
 copyright = '2026, Mark Bishop, Yvette Perrott, Tulasi Parashar, Sean Oughton'

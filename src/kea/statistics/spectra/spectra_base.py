@@ -153,7 +153,7 @@ def transform_spectrum(
         do_amp = False
         if new_type == SpectrumType.AMPLITUDE:
             new_type = SpectrumType.INTEGRATED
-        k, fek, bin_widths = bin_spectrum(k, fek, new_type, grid_dims, phys_dims)
+        k, fek, bin_widths = bin_spectrum(k, fek, new_type, phys_dims)
         if do_amp:
             k, fek = transform_spectrum(k, fek, dimension, current_type, SpectrumType.AMPLITUDE, grid_dims, phys_dims, bin_widths, is_centered)
         return k, fek
@@ -162,7 +162,7 @@ def transform_spectrum(
         # Convert to the integrated spectrum and then apply the same formula (that is independent of `dimension`)
         if current_type != SpectrumType.INTEGRATED:
             # Convert to the integrated spectrum first
-            k, fek = transform_spectrum(k, fek, dimension, current_type, SpectrumType.INTEGRATED, bin_widths, is_centered)
+            k, fek = transform_spectrum(k, fek, dimension, current_type, SpectrumType.INTEGRATED, grid_dims, phys_dims, bin_widths, is_centered)
         return k, np.sqrt(k * fek)
 
     if new_type == SpectrumType.INTEGRATED or new_type == SpectrumType.AVERAGED:

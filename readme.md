@@ -15,13 +15,19 @@
 
 To install, first clone this GitHub repository:
 ```bash
-git clone https://github.com/mab68/kea
+$ git clone https://github.com/mab68/kea
+$ cd Kea
 ```
-and then simply add the following to your `PYTHONPATH` environment variable in your `~/.bashrc` file:
+and then,
+```bash
+$ pip install -e .
+```
+
+Alternatively, simply add the following to your `PYTHONPATH` environment variable in your `~/.bashrc` file:
 ```bash
 export PYTHONPATH=path/to/Kea:$PYTHONPATH
 ```
-Alternatively, you can call the following at the start of each of your python files that will require Kea:
+OR, you can call the following at the start of each of your python files that will require Kea:
 ```Python
 import sys
 sys.path.append('path/to/Kea/')
@@ -45,10 +51,24 @@ and if using distributed computing:
 ```
 mpi4py
 ```
+These are additional *optional* packages to enable faster calculations.
 
 ## 📖 Documentation
 
-Documentation (including Jupyter notebook tutorials and examples) are available on [Read the Docs](https://astrokea-docs.readthedocs.io/en/latest/).
+Documentation -- including Jupyter notebook tutorials and examples -- are available on [Read the Docs](https://astrokea-docs.readthedocs.io/en/latest/).
+
+## 📄 Citing
+
+If you use **kea** in your research, we would be grateful if you credit (reference) us. We intend to provide references shortly.
+
+## 🤝 Acknowledgements
+
+This project was supported by the Marsden Fund Council from New Zealand Government funding, managed by Royal Society Te Apārangi (No. E4200).
+
+## 📚 References
+
+- Mark A. Bishop, Sean Oughton, Tulasi N. Parashar, Yvette C. Perrott; Direct power spectral density estimation from structure functions without Fourier transforms. Physics of Fluids 1 February 2026; 38 (2): 025107. https://doi.org/10.1063/5.0310561
+- https://github.com/mab68/Equivalent_Spectrum
 
 ## 📝 TODO:
 
@@ -78,28 +98,31 @@ Kea/
                 powerspectra.ipynb
                 powerspectra_1d.ipynb
                 masking.ipynb
+            examples/
                 solar_wind_example.ipynb
                 icm_example.ipynb
-    kea/
-        simulator/
-            mask.py
-            synthesize.py
-        statistics/
-            spectra/
-                blackman_tukey.py
-                difference_of_gaussian.py
-                equiv_spectrum.py
-                fourier.py
-                spectra_base.py
-            statfunc/
-                corrfn.py
-                statfunc_base.py
-                strfn.py
-        utils/
-            binning.py
-            compute_config.py
-            fitting.py
-            functions.py
-            geometry.py
-            plotting.py
+    src/
+        kea/
+            simulator/
+                noise.py
+                mask.py
+                synthesize.py
+            statistics/
+                spectra/
+                    blackman_tukey.py
+                    difference_of_gaussian.py
+                    equiv_spectrum.py
+                    fourier.py
+                    spectra_base.py
+                statfunc/
+                    corrfn.py
+                    statfunc_base.py
+                    strfn.py
+            utils/
+                binning.py
+                compute_config.py
+                fitting.py
+                functions.py
+                geometry.py
+                plotting.py
 ```
