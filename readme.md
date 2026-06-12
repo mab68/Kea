@@ -41,6 +41,10 @@ If using GPU calculations **kea** will additionally require:
 ```
 cupy
 ```
+and if using distributed computing:
+```
+mpi4py
+```
 
 ## 📖 Documentation
 
@@ -50,14 +54,17 @@ Documentation (including Jupyter notebook tutorials and examples) are available 
 
 - [x] Add noise helper functions
 - [ ] Finish writing documentation
-    - [ ] ICM example
-    - [ ] Mock ICM example
+    - [x] ICM example
+        - [ ] Fix L issue...
+    - [x] Mock ICM example
     - [ ] PSD method descriptions
     - [ ] Synthesis methods
 - [ ] Make into a pip-installable package
 - [ ] Implement CI/CD
 
 - [ ] Write JOSS paper
+    - [x] Convert thesis chapter
+    - [ ] Improvements
 
 ## 📁 File structure
 
