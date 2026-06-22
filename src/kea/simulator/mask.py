@@ -59,6 +59,9 @@ def create_mask(grid_dims, mask_type='circles', mask_kwargs={}, missing_fraction
             random_center = tuple([np.random.randint(0, grid_dims[i]) for i in range(ndim)])
             # Generate a random radius, maximum radius: 1/16 of the domain size
             maximum_radius = mask_kwargs.get('maximum_radius', grid_dims[0]//16)
+            if maximum_radius <= 1:
+                ## Small grid, so just make circles 1-2 pixels in radius
+                maximum_radius = 2
             random_radius = np.random.randint(1, maximum_radius)
             circle_mask = _create_circle(index_grid, random_center, random_radius)
             mask[circle_mask] = 0.
