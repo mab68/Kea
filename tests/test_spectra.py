@@ -72,3 +72,5 @@ def test_dog_shape_3d():
     kvec, fek = dog_averaged_spectrum(np.ones(FIELD_SHAPE))
     assert np.shape(kvec) == (N//2-1,), 'Wavenumbers not expected shape'
     assert np.shape(fek) == (N//2-1,), 'Spectrum not expected shape'
+
+
