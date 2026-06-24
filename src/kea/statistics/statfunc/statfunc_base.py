@@ -62,7 +62,7 @@ def _calc_stat(
     
     shape = field_gpu.shape
     num_dims = len(shape)
-    total_elements = field_gpu.size
+    total_elements = np.prod(shape)
 
     for i, lag in enumerate(lags):
         _dims = len(lag)
@@ -75,15 +75,24 @@ def _calc_stat(
         view1 = field_gpu[tuple(s1)]
         view2 = field_gpu[tuple(s2)]
 
-        denom = view1.size if stat_metric in (StatMetric.CORR, StatMetric.STRFN) else total_elements
+        # denom = view1.size if stat_metric in (StatMetric.CORR, StatMetric.STRFN) else total_elements
 
-        if stat_metric in (StatMetric.CORR, StatMetric.BIAS_CORR):
-            out_gpu[i, 0] = compute_lib.nansum(view1 * view2) / denom
+        if stat_metric == StatMetric.CORR:
+            out_gpu[i,0] = compute_lib.nanmean(view1 * view2)
+        elif stat_metric == StatMetric.BIAS_CORR:
+            out_gpu[i,0] = compute_lib.nansum(view1 * view2) / total_elements
         elif stat_metric == StatMetric.STRFN:
             diff = compute_lib.abs(view1 - view2)
             diff_powered = diff[..., None]**powers_gpu
-            total_diffs = compute_lib.nansum(diff_powered, axis=tuple(range(diff_powered.ndim - 1)))
-            out_gpu[i,:] = total_diffs / denom
+            out_gpu[i,:] = compute_lib.nanmean(diff_powered, axis=tuple(range(diff_powered.ndim - 1)))
+
+        # if stat_metric in (StatMetric.CORR, StatMetric.BIAS_CORR):
+        #     out_gpu[i, 0] = compute_lib.nansum(view1 * view2)
+        # elif stat_metric == StatMetric.STRFN:
+        #     diff = compute_lib.abs(view1 - view2)
+        #     diff_powered = diff[..., None]**powers_gpu
+        #     total_diffs = compute_lib.nansum(diff_powered, axis=tuple(range(diff_powered.ndim - 1)))
+        #     out_gpu[i,:] = total_diffs / denom
 
     if use_gpu:
         out_gpu = compute_lib.asnumpy(out_gpu)

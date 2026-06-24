@@ -43,5 +43,5 @@ def test_physdims():
 def test_powerlaw():
     k = np.linspace(1., 10., 1000)
     E = functions.pure_powerlaw(k, powerlaw=2.)
-    est_pow = fitting.get_powerlaw(k, E)
+    est_pow = fitting.get_local_powerlaw(k, E, x_log=True)[1]
     assert np.allclose(2.*np.ones(len(k)), est_pow), 'Did not estimate correct power-law'

@@ -3,7 +3,7 @@ Implements the equivalent spectrum (ESF) calculated directly using the structure
 - Mark A. Bishop, Sean Oughton, Tulasi N. Parashar, Yvette C. Perrott; Direct power spectral density estimation from structure functions without Fourier transforms. Physics of Fluids 1 February 2026; 38 (2): 025107. https://doi.org/10.1063/5.0310561
 """
 
-from kea.utils.fitting import log_log_interpolate, get_powerlaw
+from kea.utils import fitting
 
 from typing import Optional
 
@@ -14,7 +14,7 @@ def _filter_bad(
         kk: np.ndarray,
         fek: np.ndarray,
         ko: Optional[np.ndarray]=None):
-    """filter_bad(kk, fek, ko)\n
+    """_filter_bad(kk, fek, ko)\n
 
     Helper function to remove bad/unwanted values from the spectrum
 
@@ -45,8 +45,9 @@ def _filter_bad(
         fek = fek[fek > 0]
     # Interpolate onto 'ko' if provided
     if ko is not None:
-        fek = log_log_interpolate(kk, fek, ko[ko <= kmax])
-        kk = ko[ko <= kmax]
+        kk, fek = fitting.interpolate_1d_function(kk, fek, ko[ko <= kmax], x_log=True, y_log=True)
+        kk = kk.flatten()
+        fek = fek.flatten()
     return kk, fek
 
 def _sf_to_spectrum(
@@ -54,7 +55,7 @@ def _sf_to_spectrum(
         sf2: np.ndarray,
         b: float,
         ko: Optional[np.ndarray]=None):
-    """sf_to_spectrum(ell, sf2, phys_dims, grid_dims, b, ko)\n
+    """_sf_to_spectrum(ell, sf2, phys_dims, grid_dims, b, ko)\n
 
     Estimates the Fourier spectrum using the (derivative of the) structure function
 
@@ -67,7 +68,7 @@ def _sf_to_spectrum(
     Returns:
         (np.ndarray, np.ndarray): Equivalent wavenumbers and uncorrected equivalent spectrum
     """
-    dSdell = np.gradient(sf2, ell)
+    ell, dSdell = fitting.get_derivative(ell, sf2, ell, x_log=True, y_log=True)
     BfekS = (1./2.) * ell**2 * dSdell / b
     ke = b / ell
     ke, BfekS = ke[::-1], BfekS[::-1]
@@ -78,7 +79,7 @@ def _debias(
         est_alpha: np.ndarray,
         b: float,
         D: float):
-    """debias(est_alpha, b, D)\n
+    """_debias(est_alpha, b, D)\n
 
     The power law bias factor B^{pow}
 
@@ -127,6 +128,8 @@ def esf_integrated_spectrum(
         else:
             b_factor = np.sqrt(2.*float(dimension) - 2.)
     ke, BfekS = _sf_to_spectrum(physical_lags, structure_function, b_factor, fourier_wavenumbers)
-    a_fekS = get_powerlaw(ke, BfekS)
+    if fourier_wavenumbers is None:
+        fourier_wavenumbers = ke
+    _, a_fekS = fitting.get_local_powerlaw(ke, BfekS, fourier_wavenumbers, x_log=True)
     B = _debias(a_fekS, b_factor, float(dimension))
     return ke, BfekS, BfekS/B
