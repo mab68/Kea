@@ -23,5 +23,16 @@ class CalculationMode(IntEnum):
     USE_GPU = 1
     DO_DISTRIBUTE = 2
 
+class FittingMode(IntEnum):
+    """
+    Set the technique to use for fitting functions
+
+    - DO_FINITE_DIFFERENCE (do finite difference calculations)
+    - DO_GAUSSIAN_REGRESSION (do Gaussian process regression)
+    """
+    DO_FINITE_DIFFERENCE = 0
+    DO_GAUSSIAN_REGRESSION = 1
+
 ## Holds the current statfunc calculation mode
 CALCULATION_MODE_FLAGS = (CalculationMode.USE_CPU,)
+FITTING_MODE_FLAGS = FittingMode.DO_FINITE_DIFFERENCE

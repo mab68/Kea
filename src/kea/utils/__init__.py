@@ -1,6 +1,6 @@
 
 from kea.utils import compute_config
-from .compute_config import CalculationMode
+from .compute_config import CalculationMode, FittingMode
 
 from typing import Optional
 
@@ -25,6 +25,7 @@ def set_calculation_mode(
         use_cpu (bool): If true, use the CPU for calculations
         use_gpu (bool): If true, use the GPU for calculations
         do_distribute (bool): If true, distribute the lag-array calculations across available processes
+
     Returns:
         tuple: Current flags
     """
@@ -60,3 +61,41 @@ def get_calculation_mode():
     use_cpu = CalculationMode.USE_CPU in compute_config.CALCULATION_MODE_FLAGS
     use_gpu = CalculationMode.USE_GPU in compute_config.CALCULATION_MODE_FLAGS
     return use_cpu, use_gpu, do_distribute
+
+def set_fitting_mode(
+        finite_differences: Optional[bool]=False,
+        gaussian_process: Optional[bool]=False):
+    """set_fitting_mode()\n
+    
+    Set the technique to use for fitting functions
+
+    - DO_FINITE_DIFFERENCE (do finite difference calculations)
+    - DO_GAUSSIAN_REGRESSION (do Gaussian process regression)
+
+    Args:
+        finite_differences (bool):
+        gaussian_process (bool):
+    
+    Returns:
+        bool: Current flag
+    """
+    if not finite_differences and not gaussian_process:
+        raise ValueError('Need either `finite differences` or `gaussian process`')
+    if finite_differences and gaussian_process:
+        raise ValueError('Cannot do both `finite differences` and `gaussian process`')
+
+    if finite_differences:
+        compute_config.FITTING_MODE_FLAGS = FittingMode.DO_FINITE_DIFFERENCE
+    if gaussian_process:
+        compute_config.FITTING_MODE_FLAGS = FittingMode.DO_GAUSSIAN_REGRESSION
+
+    return compute_config.FITTING_MODE_FLAGS
+
+def get_fitting_mode():
+    """get_fitting_mode()\n
+
+    Returns:
+        tuple: do_finite_differences, do_gaussian_process
+    """
+    return (FittingMode.DO_FINITE_DIFFERENCE == compute_config.FITTING_MODE_FLAGS, FittingMode.DO_GAUSSIAN_REGRESSION == compute_config.FITTING_MODE_FLAGS)
+
