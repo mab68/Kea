@@ -9,7 +9,6 @@ import pytest
 ####################################################################
 # Make sure that we can actually generate 1,2,3 dimensional shapes #
 ####################################################################
-
 def test_fft_shape_1d():
     N, D = 16, 1
     FIELD_SHAPE = (N,)*D
@@ -72,3 +71,17 @@ def test_dog_shape_3d():
     kvec, fek = dog_averaged_spectrum(np.ones(FIELD_SHAPE))
     assert np.shape(kvec) == (N//2-1,), 'Wavenumbers not expected shape'
     assert np.shape(fek) == (N//2-1,), 'Spectrum not expected shape'
+
+#######################################################
+# Test spectral densities provide appropriate results #
+#######################################################
+def test_fft_noise():
+    field = np.random.normal(0., 1., (256,))
+    kvec, fek = fourier_modal_spectrum(field)
+    assert np.isclose(np.nanmean(fek), np.nanmean(np.abs(field)**2)*(2.*np.pi/256.)), 'Not expected spectra'
+
+def test_fft_sine():
+    x = np.linspace(0., 100., 1000)*(2.*np.pi/100.)
+    field = np.sin(100.*x)
+    kvec, fek = fourier_modal_spectrum(field)
+    assert np.argmax(fek[500:]) == 100., 'Not expected spectra'

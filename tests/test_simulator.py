@@ -1,5 +1,4 @@
 
-
 from kea.simulator import make_field, make_multifractal_field, create_mask, apply_gaussian, apply_poisson
 
 import numpy as np
@@ -90,5 +89,3 @@ def test_poisson_shape_3():
     field = make_field(FIELD_SHAPE, {'powerlaw': -5./3.}, 'pure_powerlaw', seed=0)
     noisy_field = apply_poisson(field, 1.)
     assert np.shape(noisy_field) == FIELD_SHAPE, 'Did not produce the expected shape'
-
-

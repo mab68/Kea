@@ -30,7 +30,7 @@ def set_calculation_mode(
     """
     if use_cpu and use_gpu:
         raise ValueError('Cannot do both GPU and CPU computations')
-    if (not use_cpu and do_distribute) or (not use_gpu and do_distribute):
+    if (not use_cpu) and (not use_gpu):
         raise ValueError('Need to use CPU or GPU')
     if (not use_cpu) and (not use_gpu) and (not do_distribute):
         raise ValueError('No flags set')

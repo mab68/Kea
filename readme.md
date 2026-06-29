@@ -1,6 +1,8 @@
 
 [![License](https://img.shields.io/github/license/mab68/kea)](https://github.com/mab68/kea/blob/Kea1.0/LICENSE)
 
+[![codecov](https://codecov.io/gh/mab68/Kea/graph/badge.svg?token=F55IMEHO85)](https://codecov.io/gh/mab68/Kea)
+
 # 🌌 **kea** 🦜⛰️
 
 **kea** is a backronym for **A**nalysis **E**ngine (Mar)**K**. It holds all the basic, functional style analysis scripts for turbulence analysis, with the purpose of analysis for the intracluster medium (ICM), but written generally enough to apply to many other regimes. For example, this package has been used to analyze solar wind timeseries data, interstellar medium telescope observations, and three-dimensional turbulence simulations.
@@ -73,14 +75,13 @@ This project was supported by the Marsden Fund Council from New Zealand Governme
 ## 📝 TODO:
 
 - [x] Add noise helper functions
-- [ ] Finish writing documentation
+- [x] Finish writing documentation
     - [x] ICM example
-        - [ ] Fix L issue...
     - [x] Mock ICM example
-    - [ ] PSD method descriptions
-    - [ ] Synthesis methods
-- [ ] Make into a pip-installable package
-- [ ] Implement CI/CD
+    - [x] PSD method descriptions
+    - [x] Synthesis methods
+- [x] Make into a pip-installable package
+- [x] Implement CI/CD
 
 - [ ] Write JOSS paper
     - [x] Convert thesis chapter
