@@ -69,6 +69,8 @@ def _calc_stat(
         compute_lib = np
         from scipy import ndimage as ndimage_lib
         field_gpu = field
+        if exposure_field is not None:
+            exposure_gpu = exposure_field
 
     if exposure_field is None:
         # No exposure field given, so assume a default

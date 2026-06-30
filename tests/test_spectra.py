@@ -85,3 +85,16 @@ def test_fft_sine():
     field = np.sin(100.*x)
     kvec, fek = fourier_modal_spectrum(field)
     assert np.argmax(fek[500:]) == 100., 'Not expected spectra'
+
+#######################################################
+# Test for bugfixes                                   #
+#######################################################
+def test_exposure_bugfix():
+    N = 256
+    D = 1
+    field = np.ones((N,)*D)
+    exposure = np.ones_like(field)
+    kvec, fek = dog_averaged_spectrum(field, exposure)
+    assert np.shape(kvec) == (N//2-1,), 'Wavenumbers not expected shape'
+    assert np.shape(fek) == (N//2-1,), 'Spectrum not expected shape'
+
