@@ -20,3 +20,9 @@ Tutorials
    examples/2_icm_example
    examples/3_synthetic_icm_example
 
+.. toctree::
+   :maxdepth: 2
+   :caption: Additional Details:
+
+   additional_details/equivalent_spectrum
+   additional_details/sf_stencil

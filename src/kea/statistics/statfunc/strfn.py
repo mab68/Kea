@@ -14,7 +14,8 @@ def structure_function(
         discrete_lags: Optional[np.ndarray] = None,
         max_lag: Optional[int] = None,
         longitudinal: Optional[bool] = False,
-        orders: Optional[tuple] = (2,)) -> tuple[np.ndarray, np.ndarray]:
+        orders: Optional[tuple] = (2,),
+        n_pt: Optional[int] = 2) -> tuple[np.ndarray, np.ndarray]:
     """structure_function(field, discrete_lags, max_lag, longitudinal, orders)\n
 
     Args:
@@ -23,6 +24,7 @@ def structure_function(
         max_lag (int): Maximum lag (as grid index) to go to
         longitudinal (bool): Whether to calculate along 1D
         orders (tuple): List of SF orders to calculate
+        n_pt (int): Number of points in the SF stencil, ONLY 2,3,4,5 implemented.
 
     Returns:
         (np.ndarray, np.ndarray): The array of (discrete) lags and computed SFs
@@ -39,6 +41,18 @@ def structure_function(
         lagvec_shape = (max_lag,)*D
         discrete_lags = get_lagvecs(lagvec_shape)
 
+    STRFN_CONFIG = {
+        2: StatMetric.STRFN,
+        3: StatMetric.STRFN_3PT,
+        4: StatMetric.STRFN_4PT,
+        5: StatMetric.STRFN_5PT,
+    }
+    if n_pt is None:
+        n_pt = 2
+    if n_pt not in STRFN_CONFIG:
+        raise ValueError('%s-pt SF stencil not implemented' % str(n_pt))
+    stat_metric = STRFN_CONFIG[n_pt]
+
     # Calculate SF
-    discrete_lags, sf = process_lags(field, discrete_lags, StatMetric.STRFN, np.array(orders))
+    discrete_lags, sf = process_lags(field, discrete_lags, stat_metric, np.array(orders))
     return discrete_lags, sf
