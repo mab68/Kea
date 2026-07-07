@@ -175,3 +175,21 @@ def make_multifractal_field(
     multifactal_field = make_field(grid_dims, spectrum_kwargs, spectrum_function, correlated_noise, phys_dims, seeds[2], normalize_output)
 
     return multifactal_field
+
+def dephase_field(field: np.ndarray,
+                seed: Optional[int]=None):
+    """dephase_field(field)\n
+
+    Dephases a field by re-sampling the phases in Fourier space
+
+    Args:
+        field (np.ndarray): The field to dephase
+
+    Returns:    
+        np.ndarray: Dephased (Gassianized) field
+    """
+    if seed is not None:
+        np.random.seed(seed)
+    field_k = np.fft.fftn(field)
+    field_k = np.abs(field_k) * _white_noise(np.shape(field))
+    return np.fft.ifftn(field_k).real

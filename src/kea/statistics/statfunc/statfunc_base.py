@@ -16,9 +16,12 @@ class StatMetric(IntEnum):
     - BIAS_CORR: Biased correlation function
     - STRFN: Structure function of arbitrary order
     """
-    CORR = 1
-    BIAS_CORR = 2
-    STRFN = 3
+    CORR = 0
+    BIAS_CORR = 1
+    STRFN = 2
+    STRFN_3PT = 3
+    STRFN_4PT = 4
+    STRFN_5PT = 5
 
 def _calc_stat(
         field: np.ndarray,
@@ -64,35 +67,53 @@ def _calc_stat(
     num_dims = len(shape)
     total_elements = np.prod(shape)
 
+    # Maps stat_metric -> (num_points, coefficients, scale)
+    STRFN_CONFIGS = {
+        StatMetric.STRFN: (2, [1.0, -1.0], 1.0),
+        StatMetric.STRFN_3PT: (3, [1.0, -2.0, 1.0], 1.0 / 3.0),
+        StatMetric.STRFN_4PT: (4, [1.0, -3.0, 3.0, -1.0], 1.0 / 10.0),
+        StatMetric.STRFN_5PT: (5, [1.0, -4.0, 6.0, -4.0, 1.0], 1.0 / 35.0),
+    }
+    # Correlation function follows the 2pt strfn
+    num_pts = STRFN_CONFIGS[stat_metric][0] if stat_metric in STRFN_CONFIGS else 2
+
     for i, lag in enumerate(lags):
         _dims = len(lag)
-        s1 = [slice(0,shape[d]) for d in range(num_dims)]
-        s2 = [slice(0,shape[d]) for d in range(num_dims)]
-        for d in range(_dims):
-            s1[d] = slice(lag[d],shape[d])
-            s2[d] = slice(0,shape[d]-lag[d])
-        
-        view1 = field_gpu[tuple(s1)]
-        view2 = field_gpu[tuple(s2)]
 
-        # denom = view1.size if stat_metric in (StatMetric.CORR, StatMetric.STRFN) else total_elements
+        # Check if the npt SF creates views outside the typical bounds
+        # if so, we ignore these lags
+        skip_lag = False
+        for d in range(_dims):
+            if (num_pts - 1) * lag[d] >= shape[d]:
+                skip_lag = True
+                break
+        if skip_lag:
+            out_gpu[i,:] = compute_lib.nan
+            continue
+
+        # Dynamically create slices into the array based on lag vector
+        views = []
+        for p in range(num_pts):
+            slices = []
+            for d in range(num_dims):
+                if d < _dims:
+                    start = (num_pts - 1 - p) * lag[d]
+                    end = shape[d] - p * lag[d]
+                    slices.append(slice(start,end))
+                else:
+                    slices.append(slice(0,shape[d]))
+            views.append(field_gpu[tuple(slices)])
 
         if stat_metric == StatMetric.CORR:
-            out_gpu[i,0] = compute_lib.nanmean(view1 * view2)
+            out_gpu[i,0] = compute_lib.nanmean(views[0]*views[1])
         elif stat_metric == StatMetric.BIAS_CORR:
-            out_gpu[i,0] = compute_lib.nansum(view1 * view2) / total_elements
-        elif stat_metric == StatMetric.STRFN:
-            diff = compute_lib.abs(view1 - view2)
-            diff_powered = diff[..., None]**powers_gpu
+            out_gpu[i,0] = compute_lib.nansum(views[0]*views[1]) / total_elements
+        elif stat_metric in STRFN_CONFIGS:
+            _, coeffs, scale = STRFN_CONFIGS[stat_metric]
+            diff = sum(c*v for c,v in zip(coeffs, views))
+            diff_abs = compute_lib.abs(diff)
+            diff_powered = scale * (diff_abs[...,None] ** powers_gpu)
             out_gpu[i,:] = compute_lib.nanmean(diff_powered, axis=tuple(range(diff_powered.ndim - 1)))
-
-        # if stat_metric in (StatMetric.CORR, StatMetric.BIAS_CORR):
-        #     out_gpu[i, 0] = compute_lib.nansum(view1 * view2)
-        # elif stat_metric == StatMetric.STRFN:
-        #     diff = compute_lib.abs(view1 - view2)
-        #     diff_powered = diff[..., None]**powers_gpu
-        #     total_diffs = compute_lib.nansum(diff_powered, axis=tuple(range(diff_powered.ndim - 1)))
-        #     out_gpu[i,:] = total_diffs / denom
 
     if use_gpu:
         out_gpu = compute_lib.asnumpy(out_gpu)

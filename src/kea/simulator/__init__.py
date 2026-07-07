@@ -1,4 +1,4 @@
-from .synthesize import make_field, make_multifractal_field
+from .synthesize import make_field, make_multifractal_field, dephase_field
 from .mask import create_mask
 from .noise import apply_gaussian, apply_poisson
 
@@ -8,4 +8,5 @@ __all__ = [
     'create_mask',
     'apply_gaussian',
     'apply_poisson',
+    'dephase_field',
 ]
