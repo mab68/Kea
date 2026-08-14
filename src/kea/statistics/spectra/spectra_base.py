@@ -26,11 +26,13 @@ class SpectrumType(IntEnum):
     """
     Describes the spectrum type/how the spectrum is binned:\n
 
+    - FIELD: The FT of the field itself. This is NOT a spectrum.
     - MODAL: Represents the PSD in waveVECTOR-space
     - INTEGRATED: Represents the contribution to the PSD that lie between magnitude wavenumbers k and k+dk (assuming left-aligned binning)
     - AVERAGED: Represents the average PSD for magnitude wavenumbers
     - AMPLITUDE: Dimensionless form the the PSD -> standard deviation per log-wavenumber
     """
+    FIELD = 0
     MODAL = 1
     INTEGRATED = 2
     AVERAGED = 3
@@ -85,21 +87,25 @@ def bin_spectrum(
     bin_center = kwargs.get('bin_center', True)
     if bin_center:
         bin_center = 'true_center'
-    norm_bin_size = kwargs.get('norm_bin_size', True)
+    norm_bin_size = kwargs.get('norm_bin_size', None)
     log_space = kwargs.get('log_space', False)
     num_bins = kwargs.get('num_bins', None)
     ignore_nan = kwargs.get('ignore_nan', True)
     max_half_bin_width = kwargs.get('max_half_bin_width', None)
     if spec_type == SpectrumType.INTEGRATED:
         ## Integrate over the bin-shells
-        bins, binned_spectrum, bin_widths = binning.bin_data(kmesh, modal_spectrum, bin_func=np.nansum,
+        if norm_bin_size is None:
+            norm_bin_size = True
+        bins, binned_spectrum, bin_widths = binning.bin_data(kmesh, modal_spectrum*np.prod(dk), bin_func=np.nansum,
             cut_excess=cut_excess, nan_small=nan_small, min_bin=min_bin, bin_loc=bin_center,
             norm_bin_size=norm_bin_size, log_space=log_space, num_bins=num_bins, ignore_nan=ignore_nan,
             max_bin=max_bin, max_half_bin_width=max_half_bin_width)
         return bins, binned_spectrum, bin_widths
     elif spec_type == SpectrumType.AVERAGED:
         ## Average over the bin-shells
-        bins, binned_spectrum, bin_widths = binning.bin_data(kmesh, modal_spectrum, bin_func=np.nanmean,
+        if norm_bin_size is None:
+            norm_bin_size = False
+        bins, binned_spectrum, bin_widths = binning.bin_data(kmesh, modal_spectrum*np.prod(dk), bin_func=np.nanmean,
             cut_excess=cut_excess, nan_small=nan_small, min_bin=min_bin, bin_loc=bin_center,
             norm_bin_size=norm_bin_size, log_space=log_space, num_bins=num_bins, ignore_nan=ignore_nan,
             max_bin=max_bin, max_half_bin_width=max_half_bin_width)
@@ -174,10 +180,10 @@ def transform_spectrum(
 
         if current_type == SpectrumType.INTEGRATED and new_type == SpectrumType.AVERAGED:
             # Converting integrated -> averaged
-            fek = fek / binshell_kernel
+            fek = fek / binshell_kernel * bin_widths
         else:
             # Otherwise, converting averaged -> integrated
-            fek = fek * binshell_kernel
+            fek = fek * binshell_kernel / bin_widths
 
         return k, fek
 
@@ -220,50 +226,29 @@ def convert_normalization_convention(
     if current_norm == new_norm:
         return kvec, fek
 
-    # Convert the wavenumber convention
-    # These are the twopi wavenumber conventions
-    if new_norm == FourierNorm.T or new_norm == FourierNorm.C:
-        if current_norm == FourierNorm.I:
-            kvec = tuple([TWOPI*k for k in kvec])
-    # These are the unity wavenumber conventions
-    if new_norm == FourierNorm.I:
-        if current_norm == FourierNorm.T or current_norm == FourierNorm.C:
-            kvec = tuple([k/TWOPI for k in kvec])
+    ## a,b factors
+    FACTOR_DICT = {
+        FourierNorm.C: (1., -1.),
+        FourierNorm.I: (0., -TWOPI),
+        FourierNorm.T: (-1., -1.)
+    }
 
-    # Generate conversion tables,
-    # The factor to multiply `fek` with to get the new spectrum
-    if spectrum_type == SpectrumType.MODAL or spectrum_type == SpectrumType.AVERAGED:
-        CONVERSION_TABLE = {
-            (FourierNorm.T, FourierNorm.I): TWOPI**(dimension),
-            (FourierNorm.T, FourierNorm.C): TWOPI**(dimension),
-            (FourierNorm.I, FourierNorm.C): 1.,
-        }
+    ## Get the factors in terms of the generalized convention
+    a, b = FACTOR_DICT[current_norm]
+    a_prime, b_prime = FACTOR_DICT[new_norm]
+
+    ## Convert the wavenumber convention
+    kvec = tuple([b*k/b_prime for k in kvec])
+
+    ## Convert the amplitudes
+    if spectrum_type in (SpectrumType.FIELD, SpectrumType.MODAL, SpectrumType.AVERAGED):
+        amp = (np.abs(b_prime)/np.abs(b)*TWOPI**(a_prime - a))**(-dimension/2)
     elif spectrum_type == SpectrumType.INTEGRATED:
-        CONVERSION_TABLE = {
-            (FourierNorm.T, FourierNorm.I): TWOPI**(1),
-            (FourierNorm.T, FourierNorm.C): TWOPI**(dimension),
-            (FourierNorm.I, FourierNorm.C): TWOPI**(1-dimension),
-        }
+        amp = (b_prime/b)**(dimension-1) * (np.abs(b_prime)/np.abs(b)*TWOPI**(a_prime - a))**(-dimension/2)
     elif spectrum_type == SpectrumType.AMPLITUDE:
-        CONVERSION_TABLE = {
-            (FourierNorm.T, FourierNorm.I): 1.,
-            (FourierNorm.T, FourierNorm.C): TWOPI**(dimension),
-            (FourierNorm.I, FourierNorm.C): TWOPI**(dimension/2.),
-        }
+        amp = (b_prime/b)**(dimension/2) * (np.abs(b_prime)/np.abs(b)*TWOPI**(a_prime - a))**(-dimension/4)
     else:
         raise ValueError('Invalid spectrum type: %s' % spectrum_type)
 
-    invert = False
-    conv_tuple = (current_norm, new_norm)
-    # If not in the table, then the inverted factor should be
-    if conv_tuple not in CONVERSION_TABLE:
-        conv_tuple = (new_norm, current_norm)
-        invert = True
-
-    factor = CONVERSION_TABLE[conv_tuple]
-    if invert:
-        factor = 1./factor
-    fek = fek * factor
-
-    return kvec, fek
+    return kvec, fek/amp
 

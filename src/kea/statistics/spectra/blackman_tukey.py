@@ -29,6 +29,7 @@ def bt_modal_spectrum(
     dx, _ = get_dxdk(grid_dims, phys_dims)
     kvec = get_kvec(grid_dims, phys_dims)
     dX = np.prod(dx)
-    fek = np.fft.fftshift(np.fft.fftn(np.fft.ifftshift(acf_full))).real*dX
+    twopi = (2.*np.pi)**acf_full.ndim
+    fek = np.fft.fftshift(np.fft.fftn(np.fft.ifftshift(acf_full))).real*(dX/twopi)
     fek = np.abs(fek)
     return kvec, fek

@@ -201,7 +201,7 @@ def dog_averaged_spectrum(
         discrete_scales = wavenumber_to_discrete_scale(wavenumbers[wavenumbers>0.], grid_dims, phys_dims, b_factor)
 
     discrete_scales, dogs = process_scales(field, discrete_scales, exposure_field)
-    dogs = dogs * np.prod(dx)**2 / np.prod(phys_dims) / dk[0]
+    dogs = dogs / np.prod(grid_dims)**2
     equiv_k = b_factor / (discrete_scales*dx[0])
     return equiv_k, dogs
 
