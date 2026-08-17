@@ -3,7 +3,7 @@ Implements the equivalent spectrum (ESF) calculated directly using the structure
 - Mark A. Bishop, Sean Oughton, Tulasi N. Parashar, Yvette C. Perrott; Direct power spectral density estimation from structure functions without Fourier transforms. Physics of Fluids 1 February 2026; 38 (2): 025107. https://doi.org/10.1063/5.0310561
 """
 
-from kea.utils import fitting
+from kea.utils import fitting, set_fitting_mode
 
 from typing import Optional
 
@@ -53,8 +53,7 @@ def _filter_bad(
 def _sf_to_spectrum(
         ell: np.ndarray,
         sf2: np.ndarray,
-        b: float,
-        ko: Optional[np.ndarray]=None):
+        b: float):
     """_sf_to_spectrum(ell, sf2, phys_dims, grid_dims, b, ko)\n
 
     Estimates the Fourier spectrum using the (derivative of the) structure function
@@ -63,17 +62,14 @@ def _sf_to_spectrum(
         ell (np.ndarray): Lags
         sf2 (np.ndarray): Angle-averaged second order structure function
         b (float): Wavenumber bias factor
-        ko (np.ndarray/None): Discrete wavenumbers for FFT
 
     Returns:
         (np.ndarray, np.ndarray): Equivalent wavenumbers and uncorrected equivalent spectrum
     """
-    ell, dSdell = fitting.get_derivative(ell, sf2, ell, x_log=True, y_log=True)
-    BfekS = (1./2.) * ell**2 * dSdell / b
-    ke = b / ell
-    ke, BfekS = ke[::-1], BfekS[::-1]
-    ke, BfekS = _filter_bad(ke, BfekS, ko)
-    return ke, BfekS
+    dell, dsf2 = fitting.get_derivative(ell, sf2, ell, x_log=True, y_log=True)
+    esf = (1./2.) * dell**2 * dsf2 / b
+    ke = b/dell
+    return ke[::-1], esf[::-1]
 
 def _debias(
         est_alpha: np.ndarray,
@@ -106,6 +102,8 @@ def esf_integrated_spectrum(
         physical_lags: np.ndarray,
         structure_function: np.ndarray,
         dimension: int,
+        sf_subsample_num: Optional[int]=None,
+        powerlaw_subsample_num: Optional[int]=None,
         b_factor: Optional[float]=None,
         fourier_wavenumbers: Optional[np.ndarray]=None) -> tuple[np.ndarray, np.ndarray, np.ndarray]:
     """esf_spectrum(physical_lags, structure_function, dimension, b_factor, fourier_wavenumbers)\n
@@ -116,6 +114,8 @@ def esf_integrated_spectrum(
         physical_lags (np.ndarray): Lags
         structure_function (np.ndarray): Angle-averaged second-order structure function
         dimension (int): Number of dimensions
+        sf_subsample_num (int): Number of points to subsample the SF to
+        powerlaw_subsample_num (int): Number of points to subsample the powerlaw estimate to
         b_factor (float/None): The wavenumber bias factor (little-b). If None, uses $b^{est}$.
         fourier_wavenumbers (np.ndarray): FFT based wavenumbers to interpolate the equivalent spectrum onto
 
@@ -127,9 +127,43 @@ def esf_integrated_spectrum(
             b_factor = 1.
         else:
             b_factor = np.sqrt(2.*float(dimension) - 2.)
-    ke, BfekS = _sf_to_spectrum(physical_lags, structure_function, b_factor, fourier_wavenumbers)
-    if fourier_wavenumbers is None:
-        fourier_wavenumbers = ke
-    _, a_fekS = fitting.get_local_powerlaw(ke, BfekS, fourier_wavenumbers, x_log=True)
-    B = _debias(a_fekS, b_factor, float(dimension))
-    return ke, BfekS, BfekS/B
+
+    ## Subsample (in log-space) the SF and lags for better spectrum estimation
+    if sf_subsample_num is not None:
+        ell_i = np.exp(np.linspace(np.log(np.nanmin(physical_lags)), np.log(np.nanmax(physical_lags)), sf_subsample_num))
+        ell_b, sf2_b = fitting.interpolate_1d_function(physical_lags, structure_function, ell_i, x_log=True, y_log=True)
+    else:
+        ell_b, sf2_b = physical_lags, structure_function
+
+    ## Estimate biased spectrum
+    ke, esf = _sf_to_spectrum(ell_b, sf2_b, b_factor)
+    ke, esf = fitting.interpolate_1d_function(*_filter_bad(ke, esf), ke, x_log=True, y_log=True)
+
+    ## Estimate local powerlaw
+    dke, desf = fitting.get_local_powerlaw(ke, esf, ke, x_log=True)
+
+    ## Subsample the local powerlaw estimate
+    if powerlaw_subsample_num:
+        set_fitting_mode(gaussian_process=True)
+        ke_i = np.exp(np.linspace(np.log(np.nanmin(dke)), np.log(np.nanmax(dke)), powerlaw_subsample_num))
+        dke2, desf2 = fitting.interpolate_1d_function(dke[~np.isnan(desf)], desf[~np.isnan(desf)], ke_i, x_log=True)
+        # Re-interpolate onto original ks
+        set_fitting_mode(finite_differences=True)
+        dke2, desf2 = fitting.interpolate_1d_function(dke2, desf2, ke, x_log=True)
+    else:
+        dke2, desf2 = dke, desf
+
+    ## Calculate the non-parametric amplitude bias factor
+    bias_factor = _debias(desf2, b_factor, float(dimension))
+    corrected_esf = esf / bias_factor
+
+    ## Interpolate onto the Fourier wavenumbers if requested:
+    if fourier_wavenumbers is not None:
+        _, esf = fitting.interpolate_1d_function(ke, esf, fourier_wavenumbers, x_log=True, y_log=True)
+        ke, corrected_esf = fitting.interpolate_1d_function(ke, corrected_esf, fourier_wavenumbers, x_log=True, y_log=True)
+
+    ## TODO: Filter out the equivalent nyquist condition
+    # nyq = np.min([np.pi*N/L, np.sqrt(2.)*N/L - dk[0]])
+
+    return ke, esf, corrected_esf
+
