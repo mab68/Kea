@@ -190,12 +190,12 @@ def transform_spectrum(
     raise ValueError('Invalid inputs.')
 
 def convert_normalization_convention(
-        kvec: tuple,
+        kvec: tuple|np.ndarray,
         fek: np.ndarray,
         dimension: int,
         current_norm: str|FourierNorm,
         new_norm: str|FourierNorm,
-        spectrum_type: SpectrumType) -> tuple[tuple, np.ndarray]:
+        spectrum_type: str|SpectrumType) -> tuple[tuple, np.ndarray]:
     r"""convert_normalization_convention(kvec, fek, dimension, current_norm, new_norm, spectrum_type)\n
 
     Converts between different spectrum normalization conventions:\n
