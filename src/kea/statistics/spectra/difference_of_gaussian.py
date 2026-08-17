@@ -33,7 +33,8 @@ def _calc_stat(
         field: np.ndarray,
         discrete_scales: np.ndarray,
         exposure_field: Optional[np.ndarray] = None,
-        use_gpu: Optional[bool] = False) -> np.ndarray:
+        use_gpu: Optional[bool] = False,
+        truncate: Optional[float] = 10.) -> np.ndarray:
     """_calc_stat(field, discrete_scales, exposure_field, use_gpu)\n
 
     Process scales using the CPU or GPU
@@ -43,6 +44,7 @@ def _calc_stat(
         discrete_scales (np.ndarray): List of scales to compute the statistic at
         exposure_field (np.ndarray): Additional exposure/mask map
         use_gpu (bool): If true, use the GPU via `cupy`
+        truncate (float): Truncate the filter at this many standard deviations
 
     Returns:
         np.ndarray: Calculated statistic for given `discrete_scales`
@@ -92,12 +94,12 @@ def _calc_stat(
         s2 = float(s * np.sqrt(1. + xi))
 
         # Convolve the image with the Gaussians of scale `s1`
-        filtered_field = ndimage_lib.gaussian_filter(field_gpu, s1, mode='constant', cval=0., truncate=10.)
-        filtered_exp = ndimage_lib.gaussian_filter(exposure_gpu, s1, mode='constant', cval=0., truncate=10.)
+        filtered_field = ndimage_lib.gaussian_filter(field_gpu, s1, mode='constant', cval=0., truncate=truncate)
+        filtered_exp = ndimage_lib.gaussian_filter(exposure_gpu, s1, mode='constant', cval=0., truncate=truncate)
         t1 = filtered_field/filtered_exp
         # Convolve the image with the Gaussians of scale `s2`
-        filtered_field = ndimage_lib.gaussian_filter(field_gpu, s2, mode='constant', cval=0., truncate=10.)
-        filtered_exp = ndimage_lib.gaussian_filter(exposure_gpu, s2, mode='constant', cval=0., truncate=10.)
+        filtered_field = ndimage_lib.gaussian_filter(field_gpu, s2, mode='constant', cval=0., truncate=truncate)
+        filtered_exp = ndimage_lib.gaussian_filter(exposure_gpu, s2, mode='constant', cval=0., truncate=truncate)
         t2 = filtered_field/filtered_exp
 
         # Calculate the variance of the difference at that scale
@@ -112,7 +114,7 @@ def _calc_stat(
         # Calculate the variance of the Gaussian filter(s)
         # Use separability to make this step faster 
         # NOTE: Currently we always do this step on the CPU
-        size = np.nanmax([2*int(10.*s1 + 0.5) + 1, 2*int(10.*s2 + 0.5) + 1])
+        size = np.nanmax([2*int(truncate*s1 + 0.5) + 1, 2*int(truncate*s2 + 0.5) + 1])
         gauss1, gauss2 = _gaussian_1d_kernel(s1, size), _gaussian_1d_kernel(s2, size)
         gaussian_variance = (
             np.nansum(gauss1**2)**dimension
@@ -135,7 +137,8 @@ def _calc_stat(
 def process_scales(
         field: np.ndarray,
         discrete_scales: np.ndarray,
-        exposure_field: Optional[np.ndarray] = None) -> np.ndarray:
+        exposure_field: Optional[np.ndarray] = None,
+        truncate: Optional[float] = 10.) -> np.ndarray:
     """process_scales(field, exposure_field, scales)\n
 
     Calculate the difference of gaussian by processing the scales
@@ -144,6 +147,7 @@ def process_scales(
         field (np.ndarray): The array to compute the scale-statfunc of
         exposure_field (np.ndarray): Additional mask/exposure map
         scales (np.ndarray): List of scales to evaluate at
+        truncate (float): Truncate filter to this many standard deviations
 
     Return:
         np.ndarray: Output array
@@ -160,7 +164,7 @@ def process_scales(
         size = comm.Get_size()
         discrete_scales = discrete_scales[rank::size]
     
-    statfunc = _calc_stat(field, discrete_scales, exposure_field, use_gpu)
+    statfunc = _calc_stat(field, discrete_scales, exposure_field, use_gpu, truncate)
     return discrete_scales, statfunc
 
 @validate_shapes('field', 'exposure_field')
@@ -170,7 +174,8 @@ def dog_averaged_spectrum(
         exposure_field: Optional[np.ndarray] = None,
         b_factor: Optional[float] = None,
         discrete_scales: Optional[np.ndarray] = None,
-        phys_dims: Optional[tuple[float,...]] = None) -> tuple[np.ndarray, np.ndarray]:
+        phys_dims: Optional[tuple[float,...]] = None,
+        truncate: Optional[float] = 10.) -> tuple[np.ndarray, np.ndarray]:
     """dog_averaged_spectrum(field, exposure_field, b_factor, discrete_scales, phys_dims)\n
     
     Calculate the angle-averaged difference-of-Gaussian spectrum.
@@ -184,6 +189,7 @@ def dog_averaged_spectrum(
         b_factor (float): If set, use a different scale-wavenumber conversion factor
         scales (np.ndarray): (discrete) Gaussian scales (standard deviation)
         phys_dims (tuple): The physical system size in x,y,z,... direction
+        truncate (float): Truncate the filter to this many standard deviations
 
     Returns:
         (np.ndarray, np.ndarray): Equivalent wavenumbers and difference-of-Gaussian spectrum
@@ -200,7 +206,7 @@ def dog_averaged_spectrum(
         wavenumbers = get_kvec(grid_dims, phys_dims)[0]
         discrete_scales = wavenumber_to_discrete_scale(wavenumbers[wavenumbers>0.], grid_dims, phys_dims, b_factor)
 
-    discrete_scales, dogs = process_scales(field, discrete_scales, exposure_field)
+    discrete_scales, dogs = process_scales(field, discrete_scales, exposure_field, truncate)
     dogs = dogs / np.prod(grid_dims)**2
     equiv_k = b_factor / (discrete_scales*dx[0])
     return equiv_k, dogs
