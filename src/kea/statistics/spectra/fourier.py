@@ -28,12 +28,13 @@ def fourier_modal_spectrum(
         (tuple, np.ndarray): wavenumber arrays and modal spectrum
     """
     grid_dims = field_a.shape
-    dx, _ = get_dxdk(grid_dims, phys_dims)
+    dx, dk = get_dxdk(grid_dims, phys_dims)
     dX = np.prod(dx)
-    L = np.prod(phys_dims)
+    dK = np.prod(dk)
+    twopi = (2.*np.pi)**field_a.ndim
 
     kvec = get_kvec(grid_dims, phys_dims)
-    far1 = dX*np.fft.fftshift(np.fft.fftn(field_a))
+    far1 = (dX/twopi)*np.fft.fftshift(np.fft.fftn(field_a))
     if field_b is not None:
         # Compute the cross-spectrum
         far2 = dX*np.fft.fftshift(np.fft.fftn(field_b))
@@ -42,4 +43,4 @@ def fourier_modal_spectrum(
     else:
         # Compute the auto-spectrum
         fek = np.abs(far1)**2
-    return tuple(kvec), fek/L
+    return tuple(kvec), fek*dK

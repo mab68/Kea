@@ -78,7 +78,7 @@ def test_dog_shape_3d():
 def test_fft_noise():
     field = np.random.normal(0., 1., (256,))
     kvec, fek = fourier_modal_spectrum(field)
-    assert np.isclose(np.nanmean(fek), np.nanmean(np.abs(field)**2)*(2.*np.pi/256.)), 'Not expected spectra'
+    assert np.isclose(np.nanmean(fek), np.nanmean(np.abs(field)**2)*(1./256.)), 'Not expected spectra'
 
 def test_fft_sine():
     x = np.linspace(0., 100., 1000)*(2.*np.pi/100.)

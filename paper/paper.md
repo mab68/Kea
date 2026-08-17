@@ -133,7 +133,7 @@ Now, we introduce the discrete form of the spectral estimation techniques.
 
 The periodogram spectral estimate is simply, [@Schuster98]
 $$
-    E^{\mathrm{FFT}}[\mathbf{m}] = \frac{1}{L^D} \left| \widehat{y}[\mathbf{m}] \right|^2.
+    E^{\mathrm{FFT}}[\mathbf{m}] = \left| \widehat{y}[\mathbf{m}] \right|^2 \Delta k^D.
 $$
 This is an estimation of the modal spectrum (hence the vector $\mathbf{m}$ argument) which needs to be subsequently angle-averaged or angle-integrated. When $y[\mathbf{n}]$ has $\mathsf{NaN}$ values, often these values are instead interpolated (e.g., with the average, or linearly).
 
@@ -205,7 +205,7 @@ $$
 $$
 which is then normalized to get the angle-averaged spectrum:
 $$
-    \overline{E}^{\mathrm{DoG}}[o] = \frac{1}{L^D} \frac{N^D}{\sum_{\mathbf{n}} \Xi[\mathbf{n}]} \frac{V[o]}{\sum_{\mathbf{n}} \left( G_{o_1}[\mathbf{n}] - G_{o_2}[\mathbf{n}] \right) ^2} \frac{\Delta x^{2D}}{\Delta k},
+    \overline{E}^{\mathrm{DoG}}[o] = \frac{N^D}{\sum_{\mathbf{n}} \Xi[\mathbf{n}]} \frac{V[o]}{\sum_{\mathbf{n}} \left( G_{o_1}[\mathbf{n}] - G_{o_2}[\mathbf{n}] \right) ^2} N^{-2D},
 $$
 where $o$ is related to the Fourier-space $m = \frac{b}{o}\frac{1}{\Delta x \Delta k}$.
 
