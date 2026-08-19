@@ -137,6 +137,8 @@ def esf_integrated_spectrum(
 
     ## Estimate biased spectrum
     ke, esf = _sf_to_spectrum(ell_b, sf2_b, b_factor)
+    print(ke, esf)
+    print(*_filter_bad(ke, esf))
     ke, esf = fitting.interpolate_1d_function(*_filter_bad(ke, esf), ke, x_log=True, y_log=True)
 
     ## Estimate local powerlaw
