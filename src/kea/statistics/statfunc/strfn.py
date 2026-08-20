@@ -54,5 +54,5 @@ def structure_function(
     stat_metric = STRFN_CONFIG[n_pt]
 
     # Calculate SF
-    discrete_lags, sf = process_lags(field, discrete_lags, stat_metric, np.array(orders))
+    discrete_lags, sf = process_lags(field, discrete_lags, stat_metric, powers=np.array(orders))
     return discrete_lags, sf

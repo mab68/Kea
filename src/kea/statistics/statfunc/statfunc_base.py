@@ -24,9 +24,10 @@ class StatMetric(IntEnum):
     STRFN_5PT = 5
 
 def _calc_stat(
-        field: np.ndarray,
+        field_a: np.ndarray,
         lags: np.ndarray,
         stat_metric: StatMetric,
+        field_b: Optional[np.ndarray] = None,
         powers: Optional[np.ndarray] = None,
         use_gpu: Optional[bool] = False) -> np.ndarray:
     """process_lags(field, lags, stat_metric, powers)\n
@@ -34,9 +35,10 @@ def _calc_stat(
     Process the lags using the CPU or GPU
     
     Args:
-        field (np.ndarray): Field to compute statistic for
+        field_a (np.ndarray): Field to compute statistic for
         lags (np.ndarray): List of lag vectors
         stat_metric (StatMetric): The statistic to calculate
+        field_b (np.ndarray): Field to compute cross-statistic for
         powers (None|np.ndarray): If calculating the structure function, what orders to calculate
         use_gpu (bool): If true, use the GPU via `cupy`
 
@@ -55,12 +57,16 @@ def _calc_stat(
             raise ValueError('Cannot use the GPU -- `cupy` not installed')
 
         powers_gpu = compute_lib.asarray(powers, dtype=compute_lib.int64)
-        field_gpu = compute_lib.asarray(field, dtype=compute_lib.float64)
+        field_gpu = compute_lib.asarray(field_a, dtype=compute_lib.float64)
+        if field_b is not None:
+            field_bgpu = compute_lib.asarray(field_b, dtype=compute_lib.float64)
     else:
         # If using the CPU, use numpy instead of cupy
         compute_lib = np
         powers_gpu = powers
-        field_gpu = field
+        field_gpu = field_a
+        field_bgpu = field_b
+
     out_gpu = compute_lib.zeros((len(lags), len(powers)), dtype=compute_lib.float64)
     
     shape = field_gpu.shape
@@ -92,7 +98,9 @@ def _calc_stat(
             continue
 
         # Dynamically create slices into the array based on lag vector
-        views = []
+        views_a = []
+        if field_b is not None:
+            views_b = []
         for p in range(num_pts):
             slices = []
             for d in range(num_dims):
@@ -102,15 +110,23 @@ def _calc_stat(
                     slices.append(slice(start,end))
                 else:
                     slices.append(slice(0,shape[d]))
-            views.append(field_gpu[tuple(slices)])
+            views_a.append(field_gpu[tuple(slices)])
+            if field_b is not None:
+                views_b.append(field_bgpu[tuple(slices)])
 
         if stat_metric == StatMetric.CORR:
-            out_gpu[i,0] = compute_lib.nanmean(views[0]*views[1])
+            if field_b is not None:
+                out_gpu[i,0] = compute_lib.nanmean((views_a[0]*views_b[1] + views_a[1]*views_b[0])/2.)
+            else:
+                out_gpu[i,0] = compute_lib.nanmean(views_a[0]*views_a[1])
         elif stat_metric == StatMetric.BIAS_CORR:
-            out_gpu[i,0] = compute_lib.nansum(views[0]*views[1]) / total_elements
+            if field_b is not None:
+                out_gpu[i,0] = compute_lib.nansum((views_a[0]*views_b[1] + views_a[1]*views_b[0])/2.) / total_elements
+            else:
+                out_gpu[i,0] = compute_lib.nansum(views_a[0]*views_a[1]) / total_elements
         elif stat_metric in STRFN_CONFIGS:
             _, coeffs, scale = STRFN_CONFIGS[stat_metric]
-            diff = sum(c*v for c,v in zip(coeffs, views))
+            diff = sum(c*v for c,v in zip(coeffs, views_a))
             diff_abs = compute_lib.abs(diff)
             diff_powered = scale * (diff_abs[...,None] ** powers_gpu)
             out_gpu[i,:] = compute_lib.nanmean(diff_powered, axis=tuple(range(diff_powered.ndim - 1)))
@@ -118,7 +134,7 @@ def _calc_stat(
     if use_gpu:
         out_gpu = compute_lib.asnumpy(out_gpu)
         # Clear GPU memory references
-        powers_gpu, field_gpu = None, None
+        powers_gpu, field_gpu, field_bgpu = None, None, None
         view1, view2 = None, None
         if stat_metric == StatMetric.STRFN:
             diff, diff_powered = None, None
@@ -127,9 +143,10 @@ def _calc_stat(
     return out_gpu
 
 def process_lags(
-        field: np.ndarray,
+        field_a: np.ndarray,
         lags: np.ndarray,
         stat_metric: StatMetric,
+        field_b: Optional[np.ndarray]=None,
         powers: Optional[np.ndarray]=None) -> np.ndarray:
     """process_lags(field, lags, stat_metric, powers)\n
 
@@ -156,5 +173,5 @@ def process_lags(
         size = comm.Get_size()
         lags = lags[rank::size]
 
-    statfunc = _calc_stat(field, lags, stat_metric, powers, use_gpu)
+    statfunc = _calc_stat(field_a, lags, stat_metric, field_b=field_b, powers=powers, use_gpu=use_gpu)
     return lags, statfunc
