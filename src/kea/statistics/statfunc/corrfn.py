@@ -9,9 +9,10 @@ from typing import Optional
 import numpy as np
 import itertools
 
-@validate_shapes('field')
+@validate_shapes('field_a', 'field_b')
 def complete_symmetric_correlation_function(
-        field: np.ndarray,
+        field_a: np.ndarray,
+        field_b: Optional[np.ndarray] = None,
         max_lag: Optional[int] = None,
         longitudinal: Optional[bool] = False,
         biased: Optional[bool] = False) -> tuple[np.ndarray, np.ndarray]:
@@ -27,6 +28,7 @@ def complete_symmetric_correlation_function(
 
     Args:
         field (np.ndarray): Array to calculate the (auto)-structure function
+        field_b (np.ndarray): Array to calculate the (cross)-structure function
         max_lag (int): Maximum lag (as grid index) to go to
         longitudinal (bool): Whether to calculate along 1D
         biased (bool): If true, apply biased normalization
@@ -35,7 +37,7 @@ def complete_symmetric_correlation_function(
         (np.ndarray, np.ndarray): The array of lags and computed ACF
     """
     # If looking for the longitudinal/transverse SF, then just iterate over "1D" lags
-    D = field.ndim
+    D = field_a.ndim
     if longitudinal:
         D = 1
 
@@ -44,7 +46,7 @@ def complete_symmetric_correlation_function(
         stat_metric  = StatMetric.BIAS_CORR
 
     # Generate the appropriate lags
-    N = np.min(np.shape(field))
+    N = np.min(np.shape(field_a))
     if max_lag is None:
         max_lag = N//2 + 1
     assert max_lag < N, 'Wanting maximum lag outside available range'
@@ -66,13 +68,20 @@ def complete_symmetric_correlation_function(
     for orthant in unique_orthants:
 
         # 1. Prepare the field by flipping the appropriate axes (where bitmask == 1)
-        flipped_field = field.copy()
+        flipped_fielda = field_a.copy()
         flip_axes = tuple([axis for axis, flip in enumerate(orthant) if flip == 1])
         if flip_axes:
-            flipped_field = np.flip(flipped_field, axis=flip_axes)
+            flipped_fielda = np.flip(flipped_fielda, axis=flip_axes)
+
+        if field_b is not None:
+            flipped_fieldb = field_b.copy()
+            if flip_axes:
+                flipped_fieldb = np.flip(flipped_fieldb, axis=flip_axes)
+        else:
+            flipped_fieldb = None
 
         # 2. Compute the partial ACF
-        _, Q_part = process_lags(flipped_field, lags, stat_metric)
+        _, Q_part = process_lags(flipped_fielda, lags, stat_metric, field_b=flipped_fieldb)
         Q_part = Q_part[:,0]
         Q_part = Q_part.reshape(lagshape_nd)
 
