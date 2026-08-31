@@ -238,7 +238,12 @@ def convert_normalization_convention(
     a_prime, b_prime = FACTOR_DICT[new_norm]
 
     ## Convert the wavenumber convention
-    kvec = tuple([b*k/b_prime for k in kvec])
+    if isinstance(kvec, tuple):
+        ## Tuple of np.ndarray
+        kvec = tuple([b*k/b_prime for k in kvec])
+    else:
+        ## np.ndarray only
+        kvec = b*kvec/b_prime
 
     ## Convert the amplitudes
     if spectrum_type in (SpectrumType.FIELD, SpectrumType.MODAL, SpectrumType.AVERAGED):
