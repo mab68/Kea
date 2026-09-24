@@ -14,7 +14,8 @@ def interpolate_1d_function(x: np.ndarray,
                             y: np.ndarray,
                             x_interp: Optional[np.ndarray]=None,
                             x_log: Optional[bool]=False,
-                            y_log: Optional[bool]=False) -> tuple[np.ndarray, np.ndarray]:
+                            y_log: Optional[bool]=False,
+                            kernel: Optional[object]=None) -> tuple[np.ndarray, np.ndarray]:
     """fit_1d_function(x, y, x_interp)\n
 
     Fits/interpolates a 1D function onto `x_interp`.
@@ -23,6 +24,9 @@ def interpolate_1d_function(x: np.ndarray,
         x (np.ndarray): 1D coordinate grid
         y (np.ndarray): 1D function
         x_interp (np.ndarray): 1D coordinate grid to interpolate to
+        x_log (bool): If true interpolate the x-axis in log-space
+        y_log (bool): If true interpolate the y-axis in log-space
+        kernel (object): The Gaussian process regression kernel (if enabled)
 
     Returns:
         np.ndarray: Estimate of 1D function
@@ -53,8 +57,12 @@ def interpolate_1d_function(x: np.ndarray,
         # ConstantKernel: Scales the amplitude of the function
         # RBF: Handles the smooth, underlying non-linear curve
         # WhiteKernel: absorbs the high-frequency noise
-        kernel = ConstantKernel(1.0) * RBF(length_scale=1.0) \
-                + WhiteKernel(noise_level=1.)
+        if kernel is None:
+            x_range = np.ptp(x_train)        # Total range of x
+            dx_min = np.nanmin(np.diff(x_train.flatten())) # Smallest grid spacing
+            kernel = ConstantKernel(1.0, constant_value_bounds=(1e-3, 1e3)) * \
+                RBF(length_scale=x_range * 0.1, length_scale_bounds=(dx_min, x_range * 10)) + \
+                WhiteKernel(noise_level=1e-4, noise_level_bounds=(1e-8, 1e-1))
         # Run optimizer
         gp = GaussianProcessRegressor(kernel=kernel, n_restarts_optimizer=10, normalize_y=True)
         gp.fit(x_train, y_train)
