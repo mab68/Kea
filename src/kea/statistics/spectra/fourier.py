@@ -37,7 +37,7 @@ def fourier_modal_spectrum(
     far1 = (dX/twopi)*np.fft.fftshift(np.fft.fftn(field_a))
     if field_b is not None:
         # Compute the cross-spectrum
-        far2 = dX*np.fft.fftshift(np.fft.fftn(field_b))
+        far2 = (dX/twopi)*np.fft.fftshift(np.fft.fftn(field_b))
         fek = far1*np.conjugate(far2)
         fek = fek.real
     else:

@@ -32,6 +32,7 @@ def _gaussian_1d_kernel(scale: float, radius: int) -> np.ndarray:
 def _calc_stat(
         field: np.ndarray,
         discrete_scales: np.ndarray,
+        field_b: Optional[np.ndarray] = None,
         exposure_field: Optional[np.ndarray] = None,
         use_gpu: Optional[bool] = False,
         truncate: Optional[float] = 10.) -> np.ndarray:
@@ -64,6 +65,8 @@ def _calc_stat(
             raise ValueError('Cannot use GPU -- `cupyx` not installed')
         # Move arrays onto GPU
         field_gpu = compute_lib.asarray(field, dtype=compute_lib.float64)
+        if field_b is not None:
+            field_bgpu = compute_lib.asarray(field_b, dtype=compute_lib.float64)
         if exposure_field is not None:
             exposure_gpu = compute_lib.asarray(exposure_field, dtype=compute_lib.float64)
     else:
@@ -71,6 +74,8 @@ def _calc_stat(
         compute_lib = np
         from scipy import ndimage as ndimage_lib
         field_gpu = field
+        if field_b is not None:
+            field_bgpu = field_b
         if exposure_field is not None:
             exposure_gpu = exposure_field
 
@@ -79,9 +84,13 @@ def _calc_stat(
         exposure_gpu = compute_lib.ones_like(field_gpu)
         # Make sure the mask is 0 where field has NaNs
         exposure_gpu[compute_lib.isnan(field_gpu)] = 0.
+        if field_b is not None:
+            exposure_gpu[compute_lib.isnan(field_bgpu)] = 0.
 
     # Remove NaNs, these are accounted for by convolving the exposure mask too
     field_gpu = compute_lib.nan_to_num(field_gpu, nan=0.)
+    if field_b is not None:
+        field_bgpu = compute_lib.nan_to_num(field_bgpu, nan=0.)
     # Setup output array
     out_gpu = compute_lib.zeros(len(discrete_scales), dtype=np.float64)
     exp_size = exposure_gpu.size
@@ -104,7 +113,22 @@ def _calc_stat(
 
         # Calculate the variance of the difference at that scale
         masked_diff = exposure_gpu * (t1 - t2)
-        variance = compute_lib.nansum(masked_diff*masked_diff)
+
+        if field_b is None:
+            variance = compute_lib.nansum(masked_diff*masked_diff)
+        else:
+            # Convolve the image with the Gaussians of scale `s1`
+            filtered_field = ndimage_lib.gaussian_filter(field_bgpu, s1, mode='constant', cval=0., truncate=truncate)
+            filtered_exp = ndimage_lib.gaussian_filter(exposure_gpu, s1, mode='constant', cval=0., truncate=truncate)
+            t1 = filtered_field/filtered_exp
+            # Convolve the image with the Gaussians of scale `s2`
+            filtered_field = ndimage_lib.gaussian_filter(field_bgpu, s2, mode='constant', cval=0., truncate=truncate)
+            filtered_exp = ndimage_lib.gaussian_filter(exposure_gpu, s2, mode='constant', cval=0., truncate=truncate)
+            t2 = filtered_field/filtered_exp
+    
+            # Calculate the variance of the difference at that scale
+            masked_diff2 = exposure_gpu * (t1 - t2)
+            variance = compute_lib.nansum(masked_diff*masked_diff2)
 
         # Generate mask compensation factor (fraction of masked field)
         m_comp = exp_size / compute_lib.nansum(exposure_gpu)
@@ -128,15 +152,16 @@ def _calc_stat(
         # Convert back to numpy array
         out_gpu = compute_lib.asnumpy(out_gpu)
         # Clear GPU memory references
-        field_gpu, exposure_gpu, filtered_field, filtered_exp = None, None, None, None
+        field_gpu, exposure_gpu, filtered_field, filtered_exp, field_bgpu = None, None, None, None, None
         compute_lib.get_default_memory_pool().free_all_blocks()
         compute_lib.get_default_pinned_memory_pool().free_all_blocks()
 
     return out_gpu
 
 def process_scales(
-        field: np.ndarray,
+        field_a: np.ndarray,
         discrete_scales: np.ndarray,
+        field_b: Optional[np.ndarray] = None,
         exposure_field: Optional[np.ndarray] = None,
         truncate: Optional[float] = 10.) -> np.ndarray:
     """process_scales(field, exposure_field, scales)\n
@@ -164,13 +189,15 @@ def process_scales(
         size = comm.Get_size()
         discrete_scales = discrete_scales[rank::size]
     
-    statfunc = _calc_stat(field, discrete_scales, exposure_field, use_gpu, truncate)
+    statfunc = _calc_stat(field_a, discrete_scales, field_b, exposure_field, use_gpu, truncate)
     return discrete_scales, statfunc
 
-@validate_shapes('field', 'exposure_field')
-@default_physdims('field')
+
+@validate_shapes('field_a', 'field_b', 'exposure_field')
+@default_physdims('field_a')
 def dog_averaged_spectrum(
-        field: np.ndarray,
+        field_a: np.ndarray,
+        field_b: Optional[np.ndarray] = None,
         exposure_field: Optional[np.ndarray] = None,
         b_factor: Optional[float] = None,
         discrete_scales: Optional[np.ndarray] = None,
@@ -195,7 +222,7 @@ def dog_averaged_spectrum(
         (np.ndarray, np.ndarray): Equivalent wavenumbers and difference-of-Gaussian spectrum
     """
 
-    grid_dims = field.shape
+    grid_dims = field_a.shape
     if b_factor is None:
         b_factor = DEFAULT_SCALE_FACTOR
 
@@ -206,7 +233,7 @@ def dog_averaged_spectrum(
         wavenumbers = get_kvec(grid_dims, phys_dims)[0]
         discrete_scales = wavenumber_to_discrete_scale(wavenumbers[wavenumbers>0.], grid_dims, phys_dims, b_factor)
 
-    discrete_scales, dogs = process_scales(field, discrete_scales, exposure_field, truncate)
+    discrete_scales, dogs = process_scales(field_a, discrete_scales, field_b, exposure_field, truncate)
     dogs = dogs / np.prod(grid_dims)**2
     equiv_k = b_factor / (discrete_scales*dx[0])
     return equiv_k, dogs

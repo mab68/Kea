@@ -99,3 +99,5 @@ def get_fitting_mode():
     """
     return (FittingMode.DO_FINITE_DIFFERENCE == compute_config.FITTING_MODE_FLAGS, FittingMode.DO_GAUSSIAN_REGRESSION == compute_config.FITTING_MODE_FLAGS)
 
+
+

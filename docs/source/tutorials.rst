@@ -26,3 +26,4 @@ Tutorials
 
    additional_details/equivalent_spectrum
    additional_details/sf_stencil
+   additional_details/sf_stencil_2d
