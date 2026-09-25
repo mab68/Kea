@@ -24,9 +24,11 @@ extensions = [
     "sphinx.ext.mathjax",  # Renders LaTeX math via MathJax
     "myst_parser",         # Enables Markdown support
     "nbsphinx",            # Notebooks
+    "sphinxcontrib.bibtex",
 ]
 # Enable dollar signs ($ and $$) for inline and block math in Markdown
 myst_enable_extensions = ["dollarmath", "amsmath"]
+bibtex_bibfiles = ['references.bib']
 
 nbsphinx_execute = 'never'
 

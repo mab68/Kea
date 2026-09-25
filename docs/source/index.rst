@@ -90,3 +90,4 @@ User Documentation
     statistics_functions
     simulator
     utility
+    additional_details
