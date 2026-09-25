@@ -46,23 +46,55 @@ bibliography: paper.bib
 
 Power spectral density techniques are widely used across disciplines but often differ in normalization and data handling, with most fields relying on a limited set of established methods. Historically, researchers have been required to implement their own routines or personally request code from others. This increases barriers to entry for performing analysis and requires a deep understanding of specific Fourier conventions to avoid errors. Without a standardized framework, order-unity normalization difference often creep in, which can lead to physical inferences that are mathematically inconsistent or physically erroneous. To address this, we present a computational package that provides consistently normalized estimators that are adaptable to multiple data types -- including intracluster medium surface brightness fluctuations, in-situ solar wind time-series, and simulation cubes.
 
-# Statement of need & state of the field
+# Statement of Need
 
 Autocorrelation functions (ACF), power spectral densities (PSD), and structure functions (SF) serve as the primary mathematical framework for quantifying the statistical properties of stochastic phenomena across varying spatial and temporal scales. In the context of fluid dynamics and astrophysics, these tools allow researchers to decompose complex, multiscale signals into their consituent parts. Of particular interest, especially within the study of (magneto)-hydrodynamic turbulence, are the characteristic scales (such as the integral scale $L$ where energy is injected, and the dissipation scale $\eta$), the power-law indices that define the energy cascade (e.g., the Kolmogorov $-5/3$), and their respective amplitudes which dictate the total turbulent energy budget. 
 
 These phenomena are rarely captured in the full continuum of values in the available space in which measurements occur. In other words, in a lot of practical cases, observations are restricted to only 1D slices, 2D projections, or 2D slices. For example, in the case of the solar wind, in-situ measurements are performed by sensors moving in relation to the plasma rest frame. These sensors generate a time-series of data: such as magnetic field (vector field), or density (scalar field) measurements. As another pertinent example, surface brightness observations of the intracluster medium (ICM) observe 2D (emission weighted) projections of scalar fields, or projections of line-of-sight components of a vector field. Often these observations are calibrated or compared against more accessible regimes, or high-fidelity simulations.
 
-Beyond the choice of statistical tool, the reliability of the output is heavily dependent on the nuances of spectral estimation. There exists a vast library of signal processing techniques designed to mitigate the distortions, aliasing, and biases inherent in finite sampling [@Stoica.Moses05; @Maciejewski.etal09; @Sefusatti.etal16]. However, the implementation of these techniques introduces its own set of variables: how the data are windowed to prevent spectral leakage, how the estimates are binned in $k$-space, and how the resulting power is normalized (e.g., ensuring Parseval's theorem is satisfied). For example, there are a total of six different $R$ packages that provide spectrum estimations with varying normalization options[@Barbour.Parker22].
+Beyond the choice of statistical tool, the reliability of the output is heavily dependent on the nuances of spectral estimation. There exists a vast library of signal processing techniques designed to mitigate the distortions, aliasing, and biases inherent in finite sampling [@Stoica.Moses05; @Maciejewski.etal09; @Sefusatti.etal16]. However, the implementation of these techniques introduces its own set of variables: how the data are windowed to prevent spectral leakage, how the estimates are binned in $k$-space, and how the resulting power is normalized (e.g., ensuring Parseval's theorem is satisfied). For example, there are a total of six different $R$ packages that provide spectrum estimations with varying normalization options [@Barbour.Parker22].
 
 If these methodological choices are not standardized, they can induce spurious physical behavior. For example, improper binning can artifically flatten a spectral slope. This could become a significant issue when comparing across different studies or when cross-correlating observational data with numerical models. Without a rigorous, consistent approach to these estimations, the resulting physical interpretations (such as the injection or dissipation scales) may reflect the limitations of the signal processing rather than the underlying physics.
+
+We thereby introduce `Kea` (**A**nalysis **E**ngine Mar**K**, backwards), a Python package that implements several different dimensionally-agnostic scale-dependent statistical estimation techniques for use in turbulence analysis. `Kea` is available on GitHub via https://github.com/mab68/Kea.
+
+Power-law correlations are a key feature of turbulence (particularly with high Reynolds numbers flows). The scale-to-scale energy transfer associated with the cascade of energy from large scales to smaller scales leads to a power-law power spectrum which is indicative of fractal-like structure where small-scale features are statistically similar to large-scale ones. 
+
+Observing the complete set of information provided by self-similar physical phenomena can be practically challenging. In particular, we highlight that the majority of astronomy and astrophysical observations are driven by the detection and manipulation of photons. The properties of these photons are determined by the conditions of the source (temperature, density, velocity, etc.) of the emitting material and its subsequent interaction with any intervening material. Determining the conditions of the source from the photons alone can be a serious challenge. Noise and resolution constraints may also limit the accuracy of the inference and increase complexity. To understand biases and systematics or comparison of theory to observation, where data is lacking, it can be necessary to compute expected observational properties from controlled surrogate models [@Haworth.etal18; @Simionescu.etal19].
+
+# State of the Field
 
 While the mathematical definitions of autocorrelation functions, power spectral densities and structure functions are well-established, their application to "real-world" datasets show significant variability in subtle ways. For example, normalizations of the difference-of-Gaussian method differ [@Arevalo.etal12; @Churazov.etal12; @Zhou.etal22].
 
 Currently available software for ICM turbulence analysis are: `turbustat` [@Koch.etal19], and `PITSZI` [@Adam.etal25]. Both of these solutions require 2D data, thus are not available for applications to e.g., solar wind turbulence analysis, or simulation cubes. Additionally, they both use a nested sequence of object-oriented class based design with built-in handling with assumptions for their respective fields: the interstellar medium for `turbustat`, and the intracluster medium for `PITSZI`. Hence, modifying for individual needs is challenging. SF calculation is available using `fastSF` [@Sadhukhan.etal21], however, only for uniform 2D and 3D datasets. In other words, `fastSF` is not applicable to gapped datasets. SF calculation is also available in Python with `fluidsf` [@Wagner.etal25].
 
-We thereby introduce `Kea` (**A**nalysis **E**ngine Mar**K**, backwards), a Python package that implements several different dimensionally-agnostic PSD estimation techniques for use in turbulence analysis. `Kea` is available on GitHub via https://github.com/mab68/Kea.
+# Software Design
 
-# Implementation Details
+`Kea` is designed with two main goals: provide standardized tools for robust, multidimensional spectral estimation, and to generate controlled synthetic fields for validating these analytical methods. To efficiently support these objectives, `Kea` is written as a Python package that operates directly on `NumPy` arrays, ensuring it is easily integrable across varying fields of research.
+
+![Spectral estimation capabilities of `Kea`. The top panel displays a 1D synthetic timeseries generated by the software, while the bottom panel illustrates the resulting spectral estimates computed using `Kea`'s implementations of the periodogram (FFT), Blackman-Tukey (BT), equivalent spectrum (ESF), and difference-of-Gaussian (DoG) methods.\label{fig:PSD_example}](plots/PSD_example.png)
+
+`Kea` provides discrete implementations of several key spectral estimation techniques. An application of these methods to a synthetic timeseries is demonstrated in \autoref{fig:PSD_example}. Since the autocorrelation function (ACF), structure function (SF), and the FFT and BT spectral estimates yield $D$-dimensional functions, it is often necessary to bin them to reduce their dimensionality. To address this, `Kea` provides a general binning routine applicable to both the spectral estimates and the lag-functions.
+
+Furthermore, `Kea` provides dedicated utilities for generating synthetic spatial fields.
+
+![Synthetic monofractal test fields generated by `Kea`, demonstrating the package's support for 1D (left), 2D (middle), and 3D (right, shown as a 2D slices) spatial data structures. These generation tools allow users to easily create controlled datasets for testing and benchmarking.\label{fig:example_synthesis}](plots/example_synthesis.png)
+
+Synthetic fields have been used extensively to validate methods and measure turbulence in the interstellar medium [@Brunt.Heyer02; @Miville-Deschenes.etal03; @Esquivel.etal03; @Ossenkopf.etal06] and similarly for the ICM [@Vogt.Ensslin05; @ZuHone.etal16; @XrismCollaboration.etal25]. `Kea` provides methods to produce (monofractal and multifractal) synthetic fields with correlations parameterized by power spectral density. These fields are synthesized in Fourier-space and Fourier-transformed to provide real-space fluctuation fields [@Barnsley.etal88; @Lakhal.etal25].
+
+For examples, shown in \autoref{fig:example_synthesis} are one, two, and three-dimensional monofractal fields. Thus, the below PSD estimators can be tested for validity with known/expected forms, and their performance tested under constraints of noise and missing data.
+
+# Research Impact Statement
+
+# AI Usage Disclosure
+
+The paper was initially drafted in full by the authors. Google Gemini 3.1 was used after the drafting of this manuscript to assist with linguistic polishing to improve manuscript clarify. Google Gemini 3.1 was also used to suggest improvements to the code. All AI-assisted text and code were thoroughly reviewed, tested, and verified by the authors to ensure correctness. The authors assume full responsibility for the final content and scientific accuracy of the manuscript and code.
+
+<!-- All Copilot-suggested
+code was reviewed, tested, and validated by the human authors to ensure correctness. The
+authors take full responsibility for the content of this manuscript. -->
+
+<!-- # Implementation Details
 
 ## Synthesis of Stochastic Fields
 
@@ -125,7 +157,7 @@ where $\widetilde{N}$ is a normalization by the number of data points, and $\mat
 
 <!-- If the function is periodic, then the lag-distance shift is performed by periodic cycling (using `NumPy.roll`) and $y[n]$ has the same number of data-points, $N$, as $y[n + m]$ for all $m$. Otherwise, the shift has to cut both $y[n]$ and $y[m]$ such that only the overlapping sequence (of equal length $N-m$) is present [@Sadhukhan.etal21]. -->
 
-There are typically two standard ways of normalizing \autoref{eqn:discrete_acf}, either: $\widetilde{N}[m] = N-m-1$, or $\widetilde{N}^{\mathrm{biased}}[m] = N$. For $D$-dimensions, $\widetilde{N}[\mathbf{m}] = \left( N_1 - m_1 - 1 \right) \dots \left( N_D - m_D - 1 \right)$ and $\widetilde{N}^{\mathrm{biased}}[m] = N^D$. If $\widetilde{N}[m] = N-m-1$ is used, then \autoref{eqn:discrete_acf} is sometimes called the standard unbiased ACF estimate. In this case, for large lags the factor $\frac{1}{\widetilde{N}[m]}$ becomes large; because the average is calculated over relatively few products, the estimate is not statistically well-constrained and is prone to high variance. However, in practice large $m$ samples inhomogeneities beyond the correlation scale, so only up to a maximum lag of $m_\mathrm{max} = \frac{N}{2}$ (or even $m_\mathrm{max} = \frac{N}{4}$) should be taken. In which case, the unbiased estimator (with $\widetilde{N}[m] = N-m - 1$) has $\approx 50\%-75\%$ of $N$ at $m = m_\mathrm{max}$ and can be statistically reliable. If the biased estimator is used, then \autoref{eqn:discrete_acf} more closely resembles the continuous ACF in the case of non-periodic $y[n]$:
+<!-- There are typically two standard ways of normalizing \autoref{eqn:discrete_acf}, either: $\widetilde{N}[m] = N-m-1$, or $\widetilde{N}^{\mathrm{biased}}[m] = N$. For $D$-dimensions, $\widetilde{N}[\mathbf{m}] = \left( N_1 - m_1 - 1 \right) \dots \left( N_D - m_D - 1 \right)$ and $\widetilde{N}^{\mathrm{biased}}[m] = N^D$. If $\widetilde{N}[m] = N-m-1$ is used, then \autoref{eqn:discrete_acf} is sometimes called the standard unbiased ACF estimate. In this case, for large lags the factor $\frac{1}{\widetilde{N}[m]}$ becomes large; because the average is calculated over relatively few products, the estimate is not statistically well-constrained and is prone to high variance. However, in practice large $m$ samples inhomogeneities beyond the correlation scale, so only up to a maximum lag of $m_\mathrm{max} = \frac{N}{2}$ (or even $m_\mathrm{max} = \frac{N}{4}$) should be taken. In which case, the unbiased estimator (with $\widetilde{N}[m] = N-m - 1$) has $\approx 50\%-75\%$ of $N$ at $m = m_\mathrm{max}$ and can be statistically reliable. If the biased estimator is used, then \autoref{eqn:discrete_acf} more closely resembles the continuous ACF in the case of non-periodic $y[n]$:
 $$
     R[\mathbf{m}] = \left( \frac{\Delta x}{L} \right)^{D} \sum_{\mathbf{n}} y[\mathbf{n}] y[\mathbf{n} + \mathbf{m}] = \frac{1}{N^D} \sum_{\mathbf{m}} y[\mathbf{n}] y[\mathbf{n} + \mathbf{m}],
 $$
@@ -262,8 +294,7 @@ where
 $$
     V(r) = \frac{r^{D} \pi^{D/2}}{\Gamma\left( D/2 + 1 \right)}
 $$
-is the volume of a $D$-dimensional hypersphere.
-
+is the volume of a $D$-dimensional hypersphere. -->
 
 # Future Work
 
@@ -271,11 +302,9 @@ It is intended for future development of `kea` to implement a general interpreta
 
 Another area of potential improvement will be the implementation of synthetic fields with anisotropy. This would be useful to test the statistics of projected fluctuations in more complex scenarios.
 
-
 # Acknowledgements
 
 This project was supported by the Marsden Fund Council from New Zealand Government funding, managed by Royal Society Te Apārangi (No. E4200).
-
 
 # References
 
