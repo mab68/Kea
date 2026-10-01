@@ -38,9 +38,9 @@ def _filter_bad(
     fek = fek[np.isfinite(fek)]
     # Remove "un-physical" negative values
     if np.sum(fek <= 0) > 0:
-        last_0 = np.where(fek<0)[0][-1]
-        kk = kk[last_0:]
-        fek = fek[last_0:]
+        # last_0 = np.where(fek<0)[0][-1]
+        # kk = kk[last_0:]
+        # fek = fek[last_0:]
         kk = kk[fek > 0]
         fek = fek[fek > 0]
     # Interpolate onto 'ko' if provided
@@ -159,8 +159,9 @@ def esf_integrated_spectrum(
 
     ## Interpolate onto the Fourier wavenumbers if requested:
     if fourier_wavenumbers is not None:
+        nyq = np.nanmax(ke)
         _, esf = fitting.interpolate_1d_function(ke, esf, fourier_wavenumbers, x_log=True, y_log=True)
-        ke, corrected_esf = fitting.interpolate_1d_function(ke, corrected_esf, fourier_wavenumbers, x_log=True, y_log=True)
+        ke, corrected_esf = fitting.interpolate_1d_function(ke, corrected_esf, fourier_wavenumbers[fourier_wavenumbers<=nyq], x_log=True, y_log=True)
 
     ## TODO: Filter out the equivalent nyquist condition
     # nyq = np.min([np.pi*N/L, np.sqrt(2.)*N/L - dk[0]])
