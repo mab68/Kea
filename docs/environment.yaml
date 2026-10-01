@@ -1,35 +1,27 @@
 name: kea
 channels:
   - conda-forge
-  - defaults
 dependencies:
-  # development
-  - python=3.14.5
-  - jupyterlab
+  - python=3.11
+  - pip
 
   # computing
   - numpy
   - scipy
-  # - numba
   - sympy
   - matplotlib
   - astropy
-  # - cupy
-
-  # extra
   - healpy
 
   # documentation
   - sphinx
-  - sphinx-book-theme
-  - mathjax
+  - furo
+  - myst-parser
   - nbsphinx
   - nbsphinx-link
   - sphinx-autodoc-typehints
-  - sphinxcontrib-napoleon
-  - myst-parser
+  - sphinxcontrib-bibtex
+  - pandoc
 
-  - pip
   - pip:
-    - sphinx-rtd-theme
     - pyspedas
