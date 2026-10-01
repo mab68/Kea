@@ -30,7 +30,12 @@ The default (fast-Fourier transform) normalization available for **kea** is:
 .. math::
    \tilde{y}[\mathbf{m}] = \frac{(\Delta x)^{D}}{(2\pi)^D} \sum_\mathbf{n} y[\mathbf{n}] e^{-2\pi i \mathbf{n} \cdot \mathbf{m}/N}
 
-where the summation is over all :math:`\mathbf{m},\mathbf{n}` e.g.,:math:`\sum_\mathbf{n}=\sum_{n_1=0}^{N_1-1} \sum_{n_2=0}^{N_2-1} \dots \sum_{n_3=0}^{N_3-1}`. This normalization is sometimes called the :math:`T` normalization in *kea*. Other normalizations are sometimes used instead; these can be converted to and from using :py:func:`kea.statistics.spectra.convert_normalization_convention()`.
+where the summation is over all :math:`\mathbf{m},\mathbf{n}` e.g.,
+
+.. math::
+   \sum_{\mathbf{n}}=\sum_{n_{1}=0}^{N_{1}-1} \sum_{n_{2}=0}^{N_{2}-1} \dots \sum_{n_{3}=0}^{N_{3}-1}.
+
+This normalization is sometimes called the :math:`T` normalization in *kea*. Other normalizations are sometimes used instead; these can be converted to and from using :py:func:`kea.statistics.spectra.convert_normalization_convention()`.
 
 The :math:`D`-dimensional DFT is implemented using Numpy and then multiplied by the correct scaling factors. The DFT is called via :py:func:`NumPy.fft.fftn()`, and the wavenumbers are obtained using the :py:func:`NumPy.fft.fftfreq()`, providing the number of sampled data points :math:`N` (this gives :math:`m/N` for :math:`m \in [-N/2, N/2]`) which is subsequently multiplied by :math:`2\pi/\Delta x` to get the angular wavenumbers.
 
