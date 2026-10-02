@@ -20,7 +20,7 @@ where :math:`x = n \Delta x`, and :math:`k = m \Delta k` with :math:`m,\, n \in 
 
 We assume that :math:`y_\mathrm{c}(x)` is periodic on the domain :math:`x \in [0,L]` such that :math:`y_\mathrm{c}(x) = y_\mathrm{c}(x+L)` and we have sampled :math:`N` evenly separated points within this domain. Our sampling interval is therefore :math:`\Delta x = L/N`. Here, :math:`L` represents the physical domain and :math:`N` the number of grid points. The discrete function will also be periodic: :math:`y[n] = y[n+N]` for :math:`n \in [0,N-1]`, :math:`m\in[-N/2, N/2]`. As a result, the Fourier-space function is also periodic: :math:`\widehat{y}_\mathrm{c}(k) = y_\mathrm{c}(k + N\Delta k)` where :math:`\Delta k = \frac{2\pi}{N \Delta x} = \frac{2\pi}{L}` and :math:`k \in [-\pi N/L, \pi N / L]`. Alternatively, a non-periodic signal is assumed to be :math:`y_\mathrm{c}(x) = 0` for :math:`x > L`. Note that mathematically, the DFT treats the signal as periodic regardless so the function should be padded with zeros to ensure there is minimal spectral leakage due to a discontinuity at the boundary.
 
-The last step in this process is to acknowledge the following relation for the discretization of the complex exponential term: :math:`xk = (n \Delta x) (m \Delta k) = nm \Delta x 2\pi / (N \Delta x) = 2 \pi n m / N`. Applying the relations stated gives us the discrete form of the continuous signal and its Fourier transform, where we have also replaced :math:`\mathrm{d} x,\, \mathrm{d} k` with :math:`\Delta x,\, \Delta k` respectively (see, e.g., :cite:`Allen.etal12`).
+The last step in this process is to acknowledge the following relation for the discretization of the complex exponential term: :math:`xk = (n \Delta x) (m \Delta k) = nm \Delta x 2\pi / (N \Delta x) = 2 \pi n m / N`. Applying the relations stated gives us the discrete form of the continuous signal and its Fourier transform, where we have also replaced :math:`\mathrm{d} x,\, \mathrm{d} k` with :math:`\Delta x,\, \Delta k` respectively (see, e.g., :cite:t:`Allen.etal12`).
 
 The default (fast-Fourier transform) normalization available for **kea** is:
 
@@ -45,7 +45,7 @@ The DFT is well-defined when :math:`y[\mathbf{n}]\in \mathscr{R}`, however, part
 Periodogram
 ^^^^^^^^^^^
 
-The periodogram (acronymized as FFT and given by :py:func:`kea.statistics.spectra.fourier_modal_spectrum()`) spectral estimate is simply (:cite:`Schuster98`):
+The periodogram (acronymized as FFT and given by :py:func:`kea.statistics.spectra.fourier_modal_spectrum()`) spectral estimate is simply :cite:p:`Schuster98`:
 
 .. math::
    E^{FFT}[\mathbf{m}] = |\tilde{y}[\mathbf{m}]|^2 \Delta k^{D}
@@ -66,7 +66,7 @@ where :math:`\widehat{Q}[\mathbf{n}]` is the (discrete) Fourier transform of the
 .. math::
    Q[\mathbf{n}] = R[\mathbf{n}] W[\mathbf{n}].
 
-Note that with the unbiased normalization (:math:`\widetilde{N}[m] = N-m-1``), :math:`\widehat{Q}[\mathbf{m}]` is not guaranteed to be positive semi-definite and there may result in negative spectral estimates which is undesirable in most applications (:cite:`Stoica.Moses05`).
+Note that with the unbiased normalization (:math:`\widetilde{N}[m] = N-m-1``), :math:`\widehat{Q}[\mathbf{m}]` is not guaranteed to be positive semi-definite and there may result in negative spectral estimates which is undesirable in most applications :cite:p:`Stoica.Moses05`.
 
 To perform this method, first call :py:func:`kea.statistics.statfunc.complete_symmetric_correlation_function()` to get the ACF, and then call :py:func:`kea.statistics.spectra.bt_modal_spectrum()` to get the modal spectrum.
 
@@ -74,7 +74,7 @@ To perform this method, first call :py:func:`kea.statistics.statfunc.complete_sy
 Difference of Gaussian
 ^^^^^^^^^^^^^^^^^^^^^^
 
-The difference-of-Gaussian method is described for the continuous case with no gaps; there are additional convolutions that can be performed to account for gaps in the data (:cite:`Arevalo.etal12` and :cite:`Ossenkopf.etal08`).
+The difference-of-Gaussian method is described for the continuous case with no gaps; there are additional convolutions that can be performed to account for gaps in the data :cite:p:`Arevalo.etal12,Ossenkopf.etal08a`.
 
 First, we define the real-space scale :math:`\sigma`, and the corresponding pixel-space scale :math:`o` as,
 
@@ -125,7 +125,7 @@ To estimate a power spectrum using the structure function, first, you must:
 - Calculate the second-order structure function: :math:`S^{(2)}[\mathbf{m}]` (using :py:func:`kea.statistics.statfunc.structure_function()`).
 - Average (bin) the second-order structure function over shells of magnitude :math:`m = |\mathbf{m}|`: :math:`\overline{S}^{(2)}[m]` (using :py:func:`kea.utils.binning.bin_data()`).
 
-Then, in :py:func:`kea.statistics.spectra.esf_integrated_spectrum()`, the following algorithm is performed (:cite:`Bishop.etal26`):
+Then, in :py:func:`kea.statistics.spectra.esf_integrated_spectrum()`, the following algorithm is performed :cite:p:`Bishop.etal26`:
 
 - Estimate an "uncorrected" equivalent spectrum, :math:`\widetilde{\mathcal{E}}^{\mathrm{ESF}}[m]` using the following relationship: :math:`\mathcal{E}^{\mathrm{ESF}}[m] = \frac{1}{2} \frac{1}{b} (m \Delta x)^2 \frac{\Delta \overline{S}^{(2)}[m]}{\Delta \left(m \Delta x \right)}`, where :math:`\frac{\Delta \overline{S}^{(2)}[m]}{\Delta \left(n \Delta x \right)}` represents a finite-difference estimate of the derivative. In the above equation, :math:`m` still represents the lag-shift. To convert to a wavenumber, a factor :math:`b` is required.
 - Estimate the local power-law slope of the "uncorrected" spectrum.
@@ -133,6 +133,13 @@ Then, in :py:func:`kea.statistics.spectra.esf_integrated_spectrum()`, the follow
 - Return a "debiased" spectrum: :math:`\mathcal{E}^{\mathrm{ESF}}[m]`.
 
 `kea` performs the above algorithm and returns both the "uncorrected" and "debiased" spectral estimates along with the associated (equivalent) wavenumbers.
+
+References
+^^^^^^^^^^
+
+.. bibliography::
+   :style: plain
+   :cited:
 
 Module Contents
 ^^^^^^^^^^^^^^^
