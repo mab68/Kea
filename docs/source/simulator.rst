@@ -15,13 +15,14 @@ where, e.g., for a Gaussian field:
 
 with :math:`a(\boldsymbol{k}),b(\boldsymbol{k}) \sim \mathcal{N}(0,1)` independently samples from a Gaussian distribution for each :math:`\boldsymbol{k}`. The Fourier transform of :math:`\widehat{f}(\boldsymbol{k})` results in our simulated fluctuation field with :math:`E(\boldsymbol{k})` typically describing the correlations. 
 
-Monofractal Fields
-^^^^^^^^^^^^^^^^^^
+Gaussian Scalar Fields
+^^^^^^^^^^^^^^^^^^^^^^
 
 
+Multifractal Scalar Fields
+^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-Multifractal Fields
-^^^^^^^^^^^^^^^^^^^
+
 
 
 
